@@ -1,0 +1,89 @@
+:root {
+  --bg-base: #0e1117;
+  --bg-surface: #171c26;
+  --bg-overlay: #1f2535;
+  --bg-elevated: #262d3f;
+  --border: #2a3241;
+  --border-strong: #3a455a;
+
+  --text-primary: #f0ede6;
+  --text-secondary: #8b95a8;
+  --text-dim: #4a5568;
+
+  --accent: #ffb938;
+  --accent-dim: #3d2f0a;
+
+  --ok: #22c55e;
+  --stale: #d97706;
+  --none: #4a5568;
+  --danger: #ef4444;
+
+  --font-display: "Bricolage Grotesque", "Segoe UI", sans-serif;
+  --font-ui: "IBM Plex Mono", "Cascadia Code", monospace;
+  --font-content: "Crimson Pro", Georgia, serif;
+
+  --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.28);
+
+  color: var(--text-primary);
+  background: var(--bg-base);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at top, rgba(255, 185, 56, 0.07), transparent 28%),
+    var(--bg-base);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--text-primary);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0)),
+    var(--bg-base);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.035) 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  color: #11151d;
+  background: var(--accent);
+}
