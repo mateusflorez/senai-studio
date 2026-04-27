@@ -71,6 +71,7 @@ function App() {
   const [editorError, setEditorError] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAtMs, setLastSavedAtMs] = useState<number | null>(null);
+  const [showTechnicalBlocks, setShowTechnicalBlocks] = useState(false);
 
   const editorContentRef = useRef("");
   const saveRequestRef = useRef(0);
@@ -509,12 +510,21 @@ function App() {
               <aside className="workspace-panel editor-screen-panel">
                 <div className="workspace-heading">
                   <p className="preview-label">Arquivo aberto</p>
-                  {selectedContentItem ? (
-                    <span className="status-chip">{selectedContentItem.file}</span>
-                  ) : null}
-                </div>
-                <div className="subject-detail-flags">
-                  <span className={`status-chip ${saveStateClassName(saveState)}`}>
+                      {selectedContentItem ? (
+                        <span className="status-chip">{selectedContentItem.file}</span>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="ghost-action"
+                        onClick={() => setShowTechnicalBlocks((current) => !current)}
+                      >
+                        {showTechnicalBlocks
+                          ? "ocultar blocos tecnicos"
+                          : "mostrar blocos tecnicos"}
+                      </button>
+                    </div>
+                    <div className="subject-detail-flags">
+                      <span className={`status-chip ${saveStateClassName(saveState)}`}>
                     {saveStateLabel(saveState, lastSavedAtMs)}
                   </span>
                   {selectedContentItem ? (
@@ -529,15 +539,16 @@ function App() {
             {editorError ? <ErrorState message={editorError} /> : null}
             {editorLoading ? <LoadingState /> : null}
             {!editorLoading && !editorError && editorDocument ? (
-              <section className="editor-panel" aria-label="Editor Markdown">
-                <div className="editor-surface">
+                <section className="editor-panel" aria-label="Editor Markdown">
+                  <div className="editor-surface">
                   <MarkdownEditor
-                    key={editorDocument.relativePath}
+                    key={`${editorDocument.relativePath}-${showTechnicalBlocks ? "show" : "hide"}`}
                     value={editorContent}
                     onChange={setEditorContent}
+                    showTechnicalBlocks={showTechnicalBlocks}
                   />
-                </div>
-              </section>
+                  </div>
+                </section>
             ) : null}
           </section>
         ) : (

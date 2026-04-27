@@ -1,15 +1,15 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { markdown } from "@codemirror/lang-markdown";
-import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import { codeFolding, foldEffect } from "@codemirror/language";
+import { EditorState, Text } from "@codemirror/state";
 import {
-  Decoration,
   drawSelection,
   EditorView,
   highlightActiveLine,
   keymap,
   lineNumbers,
 } from "@codemirror/view";
+import { markdown } from "@codemirror/lang-markdown";
 import { oneDark } from "@codemirror/theme-one-dark";
 
 const editorTheme = EditorView.theme({
@@ -51,81 +51,24 @@ const editorTheme = EditorView.theme({
   ".cm-cursor": {
     borderLeftColor: "var(--accent)",
   },
-  ".cm-marp-delimiter-line": {
-    color: "#f6c177",
+  ".cm-foldPlaceholder": {
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    borderRadius: "999px",
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    color: "var(--text-secondary)",
+    padding: "0.1rem 0.5rem",
     fontFamily: "var(--font-ui)",
   },
-  ".cm-marp-frontmatter-line": {
-    color: "#9ccfd8",
-  },
-  ".cm-marp-key": {
-    color: "#f6c177",
-    fontFamily: "var(--font-ui)",
-  },
-  ".cm-marp-directive": {
-    color: "#c4a7e7",
-    fontFamily: "var(--font-ui)",
-  },
-});
-
-const marpDecorations = EditorView.decorations.compute(["doc"], (state) => {
-  const builder = new RangeSetBuilder<Decoration>();
-  let inFrontmatter = false;
-
-  for (let lineNumber = 1; lineNumber <= state.doc.lines; lineNumber += 1) {
-    const line = state.doc.line(lineNumber);
-    const text = line.text;
-    const trimmed = text.trim();
-
-    if (lineNumber === 1 && trimmed === "---") {
-      inFrontmatter = true;
-      if (line.from < line.to) {
-        builder.add(line.from, line.to, Decoration.mark({ class: "cm-marp-delimiter-line" }));
-      }
-      continue;
-    }
-
-    if (inFrontmatter) {
-      if (trimmed === "---" || trimmed === "...") {
-        if (line.from < line.to) {
-          builder.add(line.from, line.to, Decoration.mark({ class: "cm-marp-delimiter-line" }));
-        }
-        inFrontmatter = false;
-        continue;
-      }
-
-      if (line.from < line.to) {
-        builder.add(line.from, line.to, Decoration.mark({ class: "cm-marp-frontmatter-line" }));
-      }
-
-      const keyMatch = text.match(/^(\s*)([A-Za-z_][\w-]*)(\s*:)/);
-      if (keyMatch) {
-        const keyStart = line.from + keyMatch[1].length;
-        const keyEnd = keyStart + keyMatch[2].length;
-        builder.add(keyStart, keyEnd, Decoration.mark({ class: "cm-marp-key" }));
-      }
-
-      continue;
-    }
-
-    const directiveMatch = text.match(/<!--\s*([^>]*:[^>]*)\s*-->/);
-    if (directiveMatch && directiveMatch.index !== undefined) {
-      const directiveStart =
-        line.from + directiveMatch.index + directiveMatch[0].indexOf(directiveMatch[1]);
-      const directiveEnd = directiveStart + directiveMatch[1].length;
-      builder.add(directiveStart, directiveEnd, Decoration.mark({ class: "cm-marp-directive" }));
-    }
-  }
-
-  return builder.finish();
 });
 
 export function MarkdownEditor({
   value,
   onChange,
+  showTechnicalBlocks,
 }: {
   value: string;
   onChange: (nextValue: string) => void;
+  showTechnicalBlocks: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -144,10 +87,21 @@ export function MarkdownEditor({
         drawSelection(),
         highlightActiveLine(),
         markdown(),
+        codeFolding({
+          placeholderDOM: (_view, onclick, prepared) => {
+            const placeholder = document.createElement("button");
+            placeholder.type = "button";
+            placeholder.className = "cm-foldPlaceholder";
+            placeholder.textContent =
+              typeof prepared === "string" ? prepared : "bloco tecnico oculto";
+            placeholder.onclick = onclick;
+            return placeholder;
+          },
+          preparePlaceholder: (state, range) => technicalBlockLabel(state.doc, range.from),
+        }),
         keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
         oneDark,
         editorTheme,
-        marpDecorations,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             onChangeEvent(update.state.doc.toString());
@@ -158,12 +112,15 @@ export function MarkdownEditor({
 
     const view = new EditorView({ state, parent: hostRef.current });
     viewRef.current = view;
+    if (!showTechnicalBlocks) {
+      foldTechnicalBlocks(view);
+    }
 
     return () => {
       view.destroy();
       viewRef.current = null;
     };
-  }, [onChangeEvent]);
+  }, [onChangeEvent, showTechnicalBlocks, value]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -179,7 +136,114 @@ export function MarkdownEditor({
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: value },
     });
-  }, [value]);
+    if (!showTechnicalBlocks) {
+      foldTechnicalBlocks(view);
+    }
+  }, [showTechnicalBlocks, value]);
 
   return <div ref={hostRef} className="markdown-editor" />;
 }
+
+function foldTechnicalBlocks(view: EditorView) {
+  const effects = findTechnicalBlockRanges(view.state.doc).map((range) => foldEffect.of(range));
+
+  if (effects.length > 0) {
+    view.dispatch({ effects });
+  }
+}
+
+function findTechnicalBlockRanges(doc: Text) {
+  const ranges: TechnicalBlockRange[] = [];
+  let lineNumber = 1;
+
+  if (doc.lines > 0 && doc.line(1).text.trim() === "---") {
+    const closingLine = findClosingLine(doc, 2, (line) => {
+      const trimmed = line.text.trim();
+      return trimmed === "---" || trimmed === "...";
+    });
+
+    if (closingLine) {
+      ranges.push({
+        from: doc.line(1).from,
+        to: closingLine.to,
+        label: "configuracao do slide",
+      });
+      lineNumber = closingLine.number + 1;
+    }
+  }
+
+  while (lineNumber <= doc.lines) {
+    const line = doc.line(lineNumber);
+    const trimmed = line.text.trim();
+
+    if (trimmed.startsWith("<style>")) {
+      const closingLine = findClosingLine(doc, lineNumber, (nextLine) =>
+        nextLine.text.trim().includes("</style>"),
+      );
+
+      if (closingLine) {
+        ranges.push({
+          from: line.from,
+          to: closingLine.to,
+          label: "css do tema",
+        });
+        lineNumber = closingLine.number + 1;
+        continue;
+      }
+    }
+
+    if (trimmed.startsWith("<!--")) {
+      const closingLine = findClosingLine(doc, lineNumber, (nextLine) =>
+        nextLine.text.trim().includes("-->"),
+      );
+
+      if (closingLine) {
+        ranges.push({
+          from: line.from,
+          to: closingLine.to,
+          label: commentBlockLabel(line.text),
+        });
+        lineNumber = closingLine.number + 1;
+        continue;
+      }
+    }
+
+    lineNumber += 1;
+  }
+
+  return ranges.filter((range) => range.from < range.to);
+}
+
+function technicalBlockLabel(doc: Text, from: number) {
+  return findTechnicalBlockRanges(doc).find((range) => range.from === from)?.label ?? null;
+}
+
+function commentBlockLabel(text: string) {
+  const normalized = text.toLowerCase();
+  if (normalized.includes("_class:") || normalized.includes("_paginate:") || normalized.includes("_footer:")) {
+    return "configuracao do slide";
+  }
+
+  return "anotacoes do apresentador";
+}
+
+function findClosingLine(
+  doc: Text,
+  startLineNumber: number,
+  predicate: (line: { text: string }) => boolean,
+) {
+  for (let lineNumber = startLineNumber; lineNumber <= doc.lines; lineNumber += 1) {
+    const line = doc.line(lineNumber);
+    if (predicate(line)) {
+      return line;
+    }
+  }
+
+  return null;
+}
+
+type TechnicalBlockRange = {
+  from: number;
+  to: number;
+  label: string;
+};

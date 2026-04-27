@@ -239,6 +239,10 @@
   gap: 1rem;
 }
 
+.workspace-heading > * {
+  min-width: 0;
+}
+
 .workspace-path {
   margin: 0.6rem 0 0;
   font-size: 1rem;
@@ -624,6 +628,18 @@
 
 .editor-screen-panel {
   align-self: start;
+}
+
+.editor-screen-panel .workspace-heading {
+  align-items: start;
+  flex-wrap: wrap;
+}
+
+.editor-screen-panel .ghost-action {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
 }
 
 .editor-screen-copy h1 {
