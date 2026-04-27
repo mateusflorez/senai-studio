@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { MarkdownEditor } from "./components/MarkdownEditor";
 import "./App.css";
 
 type SubjectSummary = {
@@ -28,10 +29,25 @@ type SubjectDetail = {
 
 type ContentItem = {
   file: string;
+  relativePath: string;
   title: string;
   status: "ok" | "outdated" | "none";
   updatedAtMs: number | null;
 };
+
+type EditableContentFile = {
+  file: string;
+  relativePath: string;
+  title: string;
+  content: string;
+  updatedAtMs: number | null;
+};
+
+type SaveContentResult = {
+  updatedAtMs: number | null;
+};
+
+type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
 const workspaceStorageKey = "senai-studio.workspace-path";
 
@@ -42,114 +58,243 @@ function App() {
   const [subjects, setSubjects] = useState<SubjectSummary[]>([]);
   const [selectedSubjectSlug, setSelectedSubjectSlug] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<SubjectDetail | null>(null);
+  const [selectedContentPath, setSelectedContentPath] = useState<string | null>(null);
+  const [editorDocument, setEditorDocument] = useState<EditableContentFile | null>(null);
+  const [editorContent, setEditorContent] = useState("");
+  const [loadedEditorContent, setLoadedEditorContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [editorLoading, setEditorLoading] = useState(false);
   const [changingWorkspace, setChangingWorkspace] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [editorError, setEditorError] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [lastSavedAtMs, setLastSavedAtMs] = useState<number | null>(null);
+
+  const editorContentRef = useRef("");
+  const saveRequestRef = useRef(0);
 
   useEffect(() => {
-    if (!workspacePath) {
+    editorContentRef.current = editorContent;
+  }, [editorContent]);
+
+  async function refreshSubjects(nextWorkspacePath: string) {
+    if (!nextWorkspacePath) {
       setSubjects([]);
       setSelectedSubjectSlug(null);
       setSelectedSubject(null);
+      setSelectedContentPath(null);
+      setEditorDocument(null);
+      setEditorContent("");
+      setLoadedEditorContent("");
       setLoading(false);
       setError(null);
       return;
     }
 
-    let active = true;
     setLoading(true);
 
-    async function loadSubjects() {
-      try {
-        const nextSubjects = await invoke<SubjectSummary[]>("list_subjects", {
-          workspacePath,
-        });
+    try {
+      const nextSubjects = await invoke<SubjectSummary[]>("list_subjects", {
+        workspacePath: nextWorkspacePath,
+      });
 
-        if (!active) {
-          return;
-        }
+      setSubjects(nextSubjects);
+      setError(null);
 
-        setSubjects(nextSubjects);
-        setError(null);
-
-        if (
-          selectedSubjectSlug &&
-          !nextSubjects.some((subject) => subject.slug === selectedSubjectSlug)
-        ) {
-          setSelectedSubjectSlug(null);
-          setSelectedSubject(null);
-        }
-      } catch (cause) {
-        if (!active) {
-          return;
-        }
-
-        setSubjects([]);
+      if (
+        selectedSubjectSlug &&
+        !nextSubjects.some((subject) => subject.slug === selectedSubjectSlug)
+      ) {
         setSelectedSubjectSlug(null);
         setSelectedSubject(null);
-        setError(cause instanceof Error ? cause.message : "Falha ao ler disciplinas.");
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
+        setSelectedContentPath(null);
+        setEditorDocument(null);
+        setEditorContent("");
+        setLoadedEditorContent("");
       }
+    } catch (cause) {
+      setSubjects([]);
+      setSelectedSubjectSlug(null);
+      setSelectedSubject(null);
+      setSelectedContentPath(null);
+      setEditorDocument(null);
+      setEditorContent("");
+      setLoadedEditorContent("");
+      setError(cause instanceof Error ? cause.message : "Falha ao ler disciplinas.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function refreshSubjectDetail(
+    nextWorkspacePath: string,
+    subjectSlug: string,
+  ) {
+    setDetailLoading(true);
+
+    try {
+      const detail = await invoke<SubjectDetail>("get_subject_detail", {
+        workspacePath: nextWorkspacePath,
+        subjectSlug,
+      });
+
+      setSelectedSubject(detail);
+      setDetailError(null);
+    } catch (cause) {
+      setSelectedSubject(null);
+      setDetailError(
+        cause instanceof Error ? cause.message : "Falha ao carregar a disciplina.",
+      );
+    } finally {
+      setDetailLoading(false);
+    }
+  }
+
+  async function refreshEditorDocument(
+    nextWorkspacePath: string,
+    subjectSlug: string,
+    relativePath: string,
+  ) {
+    setEditorLoading(true);
+
+    try {
+      const document = await invoke<EditableContentFile>("read_content_file", {
+        workspacePath: nextWorkspacePath,
+        subjectSlug,
+        relativePath,
+      });
+
+      setEditorDocument(document);
+      setEditorContent(document.content);
+      setLoadedEditorContent(document.content);
+      setLastSavedAtMs(document.updatedAtMs);
+      setEditorError(null);
+      setSaveState("idle");
+    } catch (cause) {
+      setEditorDocument(null);
+      setEditorContent("");
+      setLoadedEditorContent("");
+      setEditorError(
+        cause instanceof Error ? cause.message : "Falha ao abrir o arquivo selecionado.",
+      );
+    } finally {
+      setEditorLoading(false);
+    }
+  }
+
+  async function saveDocument(contentToSave: string) {
+    if (!workspacePath || !selectedSubjectSlug || !selectedContentPath) {
+      return;
     }
 
-    void loadSubjects();
+    const requestId = saveRequestRef.current + 1;
+    saveRequestRef.current = requestId;
+    setSaveState("saving");
 
-    return () => {
-      active = false;
-    };
-  }, [workspacePath, selectedSubjectSlug]);
+    try {
+      const result = await invoke<SaveContentResult>("save_content_file", {
+        workspacePath,
+        subjectSlug: selectedSubjectSlug,
+        relativePath: selectedContentPath,
+        content: contentToSave,
+      });
+
+      if (saveRequestRef.current !== requestId) {
+        return;
+      }
+
+      setLoadedEditorContent(contentToSave);
+      setLastSavedAtMs(result.updatedAtMs);
+      setSaveState(editorContentRef.current === contentToSave ? "saved" : "dirty");
+
+      await Promise.all([
+        refreshSubjects(workspacePath),
+        refreshSubjectDetail(workspacePath, selectedSubjectSlug),
+      ]);
+    } catch (cause) {
+      if (saveRequestRef.current !== requestId) {
+        return;
+      }
+
+      setSaveState("error");
+      setEditorError(cause instanceof Error ? cause.message : "Falha ao salvar o arquivo.");
+    }
+  }
+
+  useEffect(() => {
+    void refreshSubjects(workspacePath);
+  }, [workspacePath]);
 
   useEffect(() => {
     if (!workspacePath || !selectedSubjectSlug) {
       setSelectedSubject(null);
+      setSelectedContentPath(null);
       setDetailLoading(false);
       setDetailError(null);
       return;
     }
 
-    let active = true;
-    setDetailLoading(true);
+    void refreshSubjectDetail(workspacePath, selectedSubjectSlug);
+  }, [workspacePath, selectedSubjectSlug]);
 
-    async function loadSubjectDetail() {
-      try {
-        const detail = await invoke<SubjectDetail>("get_subject_detail", {
-          workspacePath,
-          subjectSlug: selectedSubjectSlug,
-        });
-
-        if (!active) {
-          return;
-        }
-
-        setSelectedSubject(detail);
-        setDetailError(null);
-      } catch (cause) {
-        if (!active) {
-          return;
-        }
-
-        setSelectedSubject(null);
-        setDetailError(
-          cause instanceof Error ? cause.message : "Falha ao carregar a disciplina.",
-        );
-      } finally {
-        if (active) {
-          setDetailLoading(false);
-        }
-      }
+  useEffect(() => {
+    if (!selectedSubject) {
+      setSelectedContentPath(null);
+      return;
     }
 
-    void loadSubjectDetail();
+    const availableItems = [...selectedSubject.lessons, ...selectedSubject.activities];
+
+    if (
+      selectedContentPath &&
+      !availableItems.some((item) => item.relativePath === selectedContentPath)
+    ) {
+      setSelectedContentPath(null);
+    }
+  }, [selectedSubject, selectedContentPath]);
+
+  useEffect(() => {
+    if (!workspacePath || !selectedSubjectSlug || !selectedContentPath) {
+      setEditorDocument(null);
+      setEditorContent("");
+      setLoadedEditorContent("");
+      setEditorLoading(false);
+      setEditorError(null);
+      setSaveState("idle");
+      return;
+    }
+
+    void refreshEditorDocument(workspacePath, selectedSubjectSlug, selectedContentPath);
+  }, [workspacePath, selectedSubjectSlug, selectedContentPath]);
+
+  useEffect(() => {
+    if (!workspacePath || !selectedSubjectSlug || !selectedContentPath || editorLoading) {
+      return;
+    }
+
+    if (editorContent === loadedEditorContent) {
+      return;
+    }
+
+    setSaveState((currentState) => (currentState === "saving" ? currentState : "dirty"));
+
+    const timeoutId = window.setTimeout(() => {
+      void saveDocument(editorContent);
+    }, 800);
 
     return () => {
-      active = false;
+      window.clearTimeout(timeoutId);
     };
-  }, [workspacePath, selectedSubjectSlug]);
+  }, [
+    editorContent,
+    loadedEditorContent,
+    editorLoading,
+    workspacePath,
+    selectedSubjectSlug,
+    selectedContentPath,
+  ]);
 
   async function handleChooseWorkspace() {
     setChangingWorkspace(true);
@@ -159,7 +304,7 @@ function App() {
         directory: true,
         multiple: false,
         defaultPath: workspacePath || undefined,
-        title: "Selecionar workspace do SENAI Studio",
+        title: "Selecionar pasta do SENAI Studio",
       });
 
       if (typeof selection !== "string" || !selection.trim()) {
@@ -170,6 +315,11 @@ function App() {
       setWorkspacePath(selection);
       setSelectedSubjectSlug(null);
       setSelectedSubject(null);
+      setSelectedContentPath(null);
+      setEditorDocument(null);
+      setEditorContent("");
+      setLoadedEditorContent("");
+      setSaveState("idle");
     } finally {
       setChangingWorkspace(false);
     }
@@ -179,6 +329,12 @@ function App() {
   const totalActivities = subjects.reduce((sum, subject) => sum + subject.activityCount, 0);
   const hasWorkspace = workspacePath.trim().length > 0;
   const viewingDetail = Boolean(selectedSubjectSlug);
+  const viewingEditor = Boolean(selectedContentPath);
+  const selectedContentItem = selectedSubject
+    ? [...selectedSubject.lessons, ...selectedSubject.activities].find(
+        (item) => item.relativePath === selectedContentPath,
+      ) ?? null
+    : null;
 
   return (
     <main className="studio-shell">
@@ -284,7 +440,14 @@ function App() {
                       key={subject.id}
                       type="button"
                       className="subject-card"
-                      onClick={() => setSelectedSubjectSlug(subject.slug)}
+                      onClick={() => {
+                        setSelectedSubjectSlug(subject.slug);
+                        setSelectedContentPath(null);
+                        setEditorDocument(null);
+                        setEditorContent("");
+                        setLoadedEditorContent("");
+                        setSaveState("idle");
+                      }}
                     >
                       <div className="subject-card-top">
                         <span
@@ -322,6 +485,61 @@ function App() {
               ) : null}
             </section>
           </>
+        ) : viewingEditor ? (
+          <section className="editor-screen" aria-labelledby="editor-title">
+            <div className="editor-screen-header">
+              <div className="editor-screen-copy">
+                <button
+                  type="button"
+                  className="back-action"
+                  onClick={() => setSelectedContentPath(null)}
+                >
+                  ← voltar para arquivos da disciplina
+                </button>
+                <p className="hero-kicker">Editor</p>
+                <h1 id="editor-title">
+                  {editorDocument?.title ?? selectedContentItem?.title ?? "Abrindo arquivo"}
+                </h1>
+                <p className="hero-body">
+                  Edite o conteudo e o aplicativo salva automaticamente pouco depois da sua
+                  ultima alteracao.
+                </p>
+              </div>
+
+              <aside className="workspace-panel editor-screen-panel">
+                <div className="workspace-heading">
+                  <p className="preview-label">Arquivo aberto</p>
+                  {selectedContentItem ? (
+                    <span className="status-chip">{selectedContentItem.file}</span>
+                  ) : null}
+                </div>
+                <div className="subject-detail-flags">
+                  <span className={`status-chip ${saveStateClassName(saveState)}`}>
+                    {saveStateLabel(saveState, lastSavedAtMs)}
+                  </span>
+                  {selectedContentItem ? (
+                    <span className={`content-status content-status-${selectedContentItem.status}`}>
+                      {statusGlyph(selectedContentItem.status)} {statusLabel(selectedContentItem.status)}
+                    </span>
+                  ) : null}
+                </div>
+              </aside>
+            </div>
+
+            {editorError ? <ErrorState message={editorError} /> : null}
+            {editorLoading ? <LoadingState /> : null}
+            {!editorLoading && !editorError && editorDocument ? (
+              <section className="editor-panel" aria-label="Editor Markdown">
+                <div className="editor-surface">
+                  <MarkdownEditor
+                    key={editorDocument.relativePath}
+                    value={editorContent}
+                    onChange={setEditorContent}
+                  />
+                </div>
+              </section>
+            ) : null}
+          </section>
         ) : (
           <section className="subject-detail-shell" aria-labelledby="subject-detail-title">
             <div className="subject-detail-header">
@@ -338,8 +556,7 @@ function App() {
                   {selectedSubject?.displayName ?? humanizeSlug(selectedSubjectSlug ?? "")}
                 </h1>
                 <p className="hero-body">
-                  Acompanhe as aulas e atividades da disciplina e veja o que ja esta pronto
-                  ou precisa ser atualizado.
+                  Abra uma aula ou atividade para editar o Markdown com salvamento automatico.
                 </p>
               </div>
 
@@ -376,15 +593,19 @@ function App() {
               <div className="subject-detail-grid">
                 <ContentColumn
                   title="Aulas"
-                  subtitle="Aulas da disciplina"
+                  subtitle="Arquivos de aula"
                   emptyMessage="Nenhuma aula encontrada."
                   items={selectedSubject.lessons}
+                  selectedPath={selectedContentPath}
+                  onSelect={setSelectedContentPath}
                 />
                 <ContentColumn
                   title="Atividades"
-                  subtitle="Atividades da disciplina"
+                  subtitle="Arquivos de atividade"
                   emptyMessage="Nenhuma atividade encontrada."
                   items={selectedSubject.activities}
+                  selectedPath={selectedContentPath}
+                  onSelect={setSelectedContentPath}
                 />
               </div>
             ) : null}
@@ -400,11 +621,15 @@ function ContentColumn({
   subtitle,
   items,
   emptyMessage,
+  selectedPath,
+  onSelect,
 }: {
   title: string;
   subtitle: string;
   items: ContentItem[];
   emptyMessage: string;
+  selectedPath: string | null;
+  onSelect: (relativePath: string) => void;
 }) {
   return (
     <section className="content-column">
@@ -421,7 +646,14 @@ function ContentColumn({
       ) : (
         <div className="content-list">
           {items.map((item) => (
-            <article key={item.file} className="content-card">
+            <button
+              key={item.relativePath}
+              type="button"
+              className={`content-card content-card-button ${
+                selectedPath === item.relativePath ? "is-selected" : ""
+              }`}
+              onClick={() => onSelect(item.relativePath)}
+            >
               <div className="content-card-top">
                 <span className={`content-status content-status-${item.status}`}>
                   {statusGlyph(item.status)} {statusLabel(item.status)}
@@ -430,7 +662,7 @@ function ContentColumn({
               </div>
               <h3>{item.title}</h3>
               <p className="content-updated">{formatUpdatedAt(item.updatedAtMs)}</p>
-            </article>
+            </button>
           ))}
         </div>
       )}
@@ -462,9 +694,24 @@ function flagClassName(isReady: boolean) {
   return isReady ? "subject-flag is-ready" : "subject-flag";
 }
 
+function saveStateClassName(saveState: SaveState) {
+  if (saveState === "saved") return "status-chip-ok";
+  if (saveState === "saving") return "status-chip-saving";
+  if (saveState === "error") return "status-chip-error";
+  return "";
+}
+
+function saveStateLabel(saveState: SaveState, updatedAtMs: number | null) {
+  if (saveState === "saving") return "salvando...";
+  if (saveState === "saved") return `salvo ${formatClock(updatedAtMs)}`;
+  if (saveState === "dirty") return "alteracoes nao salvas";
+  if (saveState === "error") return "erro ao salvar";
+  return updatedAtMs ? `pronto ${formatClock(updatedAtMs)}` : "pronto para editar";
+}
+
 function statusLabel(status: ContentItem["status"]) {
-  if (status === "ok") return "ok";
-  if (status === "outdated") return "pendente";
+  if (status === "ok") return "atualizado";
+  if (status === "outdated") return "precisa revisar";
   return "sem output";
 }
 
@@ -483,6 +730,17 @@ function formatUpdatedAt(updatedAtMs: number | null) {
     day: "2-digit",
     month: "short",
     year: "numeric",
+  }).format(new Date(updatedAtMs));
+}
+
+function formatClock(updatedAtMs: number | null) {
+  if (!updatedAtMs) {
+    return "agora";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
   }).format(new Date(updatedAtMs));
 }
 

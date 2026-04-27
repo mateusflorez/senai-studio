@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     time::SystemTime,
 };
 
@@ -42,8 +42,25 @@ struct SubjectDetail {
 #[serde(rename_all = "camelCase")]
 struct ContentItem {
     file: String,
+    relative_path: String,
     title: String,
     status: String,
+    updated_at_ms: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EditableContentFile {
+    file: String,
+    relative_path: String,
+    title: String,
+    content: String,
+    updated_at_ms: Option<u64>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SaveContentResult {
     updated_at_ms: Option<u64>,
 }
 
@@ -66,13 +83,7 @@ fn list_subjects(workspace_path: String) -> Result<Vec<SubjectSummary>, String> 
 
 #[tauri::command]
 fn get_subject_detail(workspace_path: String, subject_slug: String) -> Result<SubjectDetail, String> {
-    let root = resolve_workspace_root(&workspace_path)?;
-    let subject_path = root.join(&subject_slug);
-
-    if !subject_path.is_dir() || !is_subject_directory(&subject_path) {
-        return Err(format!("Disciplina nao encontrada: {}", subject_slug));
-    }
-
+    let subject_path = resolve_subject_path(&workspace_path, &subject_slug)?;
     let config = read_subject_config(&subject_path);
     let display_name = config
         .as_ref()
@@ -97,6 +108,65 @@ fn get_subject_detail(workspace_path: String, subject_slug: String) -> Result<Su
         has_plan: subject_path.join("plano_geral.md").is_file(),
         lessons: list_content_items(&subject_path, "aulas", Some(("slides", "pptx"))),
         activities: list_content_items(&subject_path, "atividades", Some(("atividades/pdfs", "pdf"))),
+    })
+}
+
+#[tauri::command]
+fn read_content_file(
+    workspace_path: String,
+    subject_slug: String,
+    relative_path: String,
+) -> Result<EditableContentFile, String> {
+    let subject_path = resolve_subject_path(&workspace_path, &subject_slug)?;
+    let content_path = resolve_content_path(&subject_path, &relative_path)?;
+
+    if !content_path.is_file() {
+        return Err(format!("Arquivo nao encontrado: {}", relative_path));
+    }
+
+    let content = fs::read_to_string(&content_path)
+        .map_err(|error| format!("Nao foi possivel abrir {}: {}", relative_path, error))?;
+    let file = content_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_string();
+    let title = display_title(&content, &humanize_slug(&file_stem(&file)));
+
+    Ok(EditableContentFile {
+        file,
+        relative_path,
+        title,
+        content,
+        updated_at_ms: fs::metadata(&content_path)
+            .ok()
+            .and_then(|metadata| metadata.modified().ok())
+            .and_then(system_time_to_ms),
+    })
+}
+
+#[tauri::command]
+fn save_content_file(
+    workspace_path: String,
+    subject_slug: String,
+    relative_path: String,
+    content: String,
+) -> Result<SaveContentResult, String> {
+    let subject_path = resolve_subject_path(&workspace_path, &subject_slug)?;
+    let content_path = resolve_content_path(&subject_path, &relative_path)?;
+
+    if !content_path.is_file() {
+        return Err(format!("Arquivo nao encontrado: {}", relative_path));
+    }
+
+    fs::write(&content_path, content)
+        .map_err(|error| format!("Nao foi possivel salvar {}: {}", relative_path, error))?;
+
+    Ok(SaveContentResult {
+        updated_at_ms: fs::metadata(&content_path)
+            .ok()
+            .and_then(|metadata| metadata.modified().ok())
+            .and_then(system_time_to_ms),
     })
 }
 
@@ -173,7 +243,8 @@ fn list_content_items(
                 .unwrap_or_else(|| "none".to_string());
 
             Some(ContentItem {
-                file: file_name,
+                file: file_name.clone(),
+                relative_path: format!("{}/{}", folder_name, file_name),
                 title,
                 status,
                 updated_at_ms: fs::metadata(&file_path)
@@ -232,16 +303,14 @@ fn extract_frontmatter(content: &str, key: &str) -> Option<String> {
 }
 
 fn extract_first_heading(content: &str) -> Option<String> {
-    strip_frontmatter(content)
-        .lines()
-        .find_map(|line| {
-            let trimmed = line.trim();
-            if trimmed.starts_with("# ") || trimmed.starts_with("## ") {
-                Some(trimmed.trim_start_matches('#').trim().to_string())
-            } else {
-                None
-            }
-        })
+    strip_frontmatter(content).lines().find_map(|line| {
+        let trimmed = line.trim();
+        if trimmed.starts_with("# ") || trimmed.starts_with("## ") {
+            Some(trimmed.trim_start_matches('#').trim().to_string())
+        } else {
+            None
+        }
+    })
 }
 
 fn strip_frontmatter(content: &str) -> &str {
@@ -366,12 +435,50 @@ fn resolve_workspace_root(workspace_path: &str) -> Result<PathBuf, String> {
     Ok(path)
 }
 
+fn resolve_subject_path(workspace_path: &str, subject_slug: &str) -> Result<PathBuf, String> {
+    let root = resolve_workspace_root(workspace_path)?;
+    let subject_path = root.join(subject_slug);
+
+    if !subject_path.is_dir() || !is_subject_directory(&subject_path) {
+        return Err(format!("Disciplina nao encontrada: {}", subject_slug));
+    }
+
+    Ok(subject_path)
+}
+
+fn resolve_content_path(subject_path: &Path, relative_path: &str) -> Result<PathBuf, String> {
+    let trimmed = relative_path.trim();
+    if trimmed.is_empty() {
+        return Err("Nenhum arquivo foi selecionado.".to_string());
+    }
+
+    let relative = Path::new(trimmed);
+    if relative.components().any(|component| !matches!(component, Component::Normal(_))) {
+        return Err(format!("Caminho invalido: {}", relative_path));
+    }
+
+    if !relative
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| value.eq_ignore_ascii_case("md"))
+    {
+        return Err(format!("Somente arquivos Markdown podem ser editados: {}", relative_path));
+    }
+
+    Ok(subject_path.join(relative))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![list_subjects, get_subject_detail])
+        .invoke_handler(tauri::generate_handler![
+            list_subjects,
+            get_subject_detail,
+            read_content_file,
+            save_content_file
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
