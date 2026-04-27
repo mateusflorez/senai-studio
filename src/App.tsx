@@ -69,7 +69,7 @@ type DeleteTarget =
   | { kind: "subject"; slug: string; name: string }
   | { kind: "content"; relativePath: string; title: string; label: "aula" | "atividade" };
 
-const workspaceStorageKey = "senai-studio.workspace-path";
+const workspaceStorageKey = "lumen-studio.workspace-path";
 const subjectColorOptions = ["#FFB938", "#F97316", "#22C55E", "#06B6D4", "#2563EB", "#E11D48"];
 
 function App() {
@@ -341,7 +341,7 @@ function App() {
         directory: true,
         multiple: false,
         defaultPath: workspacePath || undefined,
-        title: "Selecionar pasta do SENAI Studio",
+        title: "Selecionar pasta do Lumen Studio",
       });
 
       if (typeof selection !== "string" || !selection.trim()) {
@@ -761,7 +761,7 @@ function App() {
 
       <section className="studio-stage">
         <header className="stage-header">
-          <p className="eyebrow">SENAI Studio</p>
+          <p className="eyebrow">Lumen Studio</p>
           <div className="header-meta">
             <span className={`status-chip ${hasWorkspace ? "status-chip-ok" : ""}`}>
               {hasWorkspace ? "◉ pasta conectada" : "◎ selecione uma pasta"}

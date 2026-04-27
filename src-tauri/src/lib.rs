@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tauri::Manager;
 use std::{
     fs,
     path::{Component, Path, PathBuf},
@@ -978,15 +979,15 @@ fn next_content_number(dir: &Path, prefix: &str) -> usize {
 }
 
 fn template_context() -> &'static str {
-    "# Disciplina Modelo\n\n## Proposito\n\nEsta disciplina foi gerada para demonstrar o fluxo completo do SENAI Studio com arquivos reais, uma aula Marp e uma atividade em Markdown.\n\n## O que voce encontra aqui\n\n- uma aula com capa, topicos, tabela, imagem e notas do apresentador\n- uma atividade com marcacao, tabela, imagem, campos de preenchimento e questoes discursivas\n- estrutura completa de disciplina para servir como ponto de partida\n"
+    "# Disciplina Modelo\n\n## Proposito\n\nEsta disciplina foi gerada para demonstrar o fluxo completo do Lumen Studio com arquivos reais, uma aula Marp e uma atividade em Markdown.\n\n## O que voce encontra aqui\n\n- uma aula com capa, topicos, tabela, imagem e notas do apresentador\n- uma atividade com marcacao, tabela, imagem, campos de preenchimento e questoes discursivas\n- estrutura completa de disciplina para servir como ponto de partida\n"
 }
 
 fn template_plan() -> &'static str {
-    "# Plano Geral — Disciplina Modelo\n\n## Objetivo geral\n\nApresentar uma estrutura de exemplo que ajude o professor a entender como organizar conteudo, aula e atividade dentro do SENAI Studio.\n\n## Sequencia sugerida\n\n1. Aula 01 — Visao geral do Studio\n2. Atividade 01 — Mapeamento de fluxo\n\n## Resultados esperados\n\n- Entender a estrutura da disciplina\n- Reconhecer os tipos de conteudo que o editor suporta\n- Usar a disciplina como base para criar novas materias\n"
+    "# Plano Geral — Disciplina Modelo\n\n## Objetivo geral\n\nApresentar uma estrutura de exemplo que ajude o professor a entender como organizar conteudo, aula e atividade dentro do Lumen Studio.\n\n## Sequencia sugerida\n\n1. Aula 01 — Visao geral do Studio\n2. Atividade 01 — Mapeamento de fluxo\n\n## Resultados esperados\n\n- Entender a estrutura da disciplina\n- Reconhecer os tipos de conteudo que o editor suporta\n- Usar a disciplina como base para criar novas materias\n"
 }
 
 fn template_lesson() -> &'static str {
-    "---\nmarp: true\ntheme: default\npaginate: true\ntitle: Aula 01 - Visao geral do SENAI Studio\n---\n\n<style>\nsection.capa {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n}\nsection.capa h1 {\n  color: #1f4f99;\n  margin-bottom: 0;\n}\nsection.capa h2 {\n  color: #4b77b8;\n  margin-top: 0.25rem;\n}\n.table-compact table {\n  font-size: 0.72em;\n}\n.highlight {\n  color: #c2410c;\n  font-weight: 700;\n}\n</style>\n\n<!-- _class: capa -->\n<!-- _paginate: false -->\n\n# Disciplina Modelo\n## Aula 01 — Visao geral do SENAI Studio\n\nExemplo de aula com recursos variados\n\n---\n\n## Objetivos da aula\n\n- Conhecer a estrutura de uma disciplina\n- Visualizar exemplos de escrita para slides\n- Usar imagens, tabelas e anotacoes do apresentador\n\n---\n\n## Topicos do encontro\n\n- Estrutura da pasta da disciplina\n- Diferenca entre aula e atividade\n- Recursos visuais no Markdown\n- Fluxo de edicao e revisao\n\n<!--\nAbrir a aula explicando que este arquivo foi pensado para mostrar o maximo de possibilidades com o minimo de friccao para o professor.\nCada topico pode virar uma aula real depois.\n-->\n\n---\n\n## Estrutura basica da disciplina\n\n| Pasta ou arquivo | Funcao |\n|---|---|\n| `contexto.md` | descreve a disciplina |\n| `plano_geral.md` | organiza a sequencia de conteudo |\n| `aulas/` | guarda os slides Marp |\n| `atividades/` | guarda as atividades |\n| `referencias/` | notas e apoio |\n\n---\n\n## Exemplo de imagem no slide\n\n![h:260](../assets/exemplo_fluxo.svg)\n\n<!--\nUsar este slide para mostrar que o professor pode incorporar diagramas simples no proprio material da disciplina.\n-->\n\n---\n\n## Exemplo de interface ou wireframe\n\n![h:250](../assets/exemplo_interface.svg)\n\n---\n\n<!-- _class: table-compact -->\n## Comparando tipos de conteudo\n\n| Tipo | Melhor uso | Saida comum |\n|---|---|---|\n| Aula | explicar, demonstrar, apresentar | slide |\n| Atividade | praticar, revisar, avaliar | PDF |\n| Referencia | apoiar o preparo do docente | Markdown interno |\n\n---\n\n## Destaques para a escrita\n\n- Use titulos curtos e objetivos\n- Prefira um ponto principal por slide\n- Marque trechos importantes com destaque como <span class=\"highlight\">conceito-chave</span>\n- Deixe anotacoes para voce em comentarios HTML\n\n<!--\nReforcar que o aluno ve o slide renderizado, mas o docente pode manter seu roteiro dentro do proprio arquivo.\n-->\n\n---\n\n## Mini atividade em sala\n\n1. Abra o arquivo da atividade modelo\n2. Identifique os blocos de marcacao, tabela e imagem\n3. Edite uma pergunta com sua propria linguagem\n4. Salve e volte para comparar o resultado\n\n---\n\n## Fechamento\n\n- Esta disciplina foi criada para servir como base inicial\n- Voce pode duplicar a estrutura e adaptar para sua materia\n- O proximo passo natural e substituir os exemplos pelo seu conteudo real\n"
+    "---\nmarp: true\ntheme: default\npaginate: true\ntitle: Aula 01 - Visao geral do Lumen Studio\n---\n\n<style>\nsection.capa {\n  text-align: center;\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n}\nsection.capa h1 {\n  color: #1f4f99;\n  margin-bottom: 0;\n}\nsection.capa h2 {\n  color: #4b77b8;\n  margin-top: 0.25rem;\n}\n.table-compact table {\n  font-size: 0.72em;\n}\n.highlight {\n  color: #c2410c;\n  font-weight: 700;\n}\n</style>\n\n<!-- _class: capa -->\n<!-- _paginate: false -->\n\n# Disciplina Modelo\n## Aula 01 — Visao geral do Lumen Studio\n\nExemplo de aula com recursos variados\n\n---\n\n## Objetivos da aula\n\n- Conhecer a estrutura de uma disciplina\n- Visualizar exemplos de escrita para slides\n- Usar imagens, tabelas e anotacoes do apresentador\n\n---\n\n## Topicos do encontro\n\n- Estrutura da pasta da disciplina\n- Diferenca entre aula e atividade\n- Recursos visuais no Markdown\n- Fluxo de edicao e revisao\n\n<!--\nAbrir a aula explicando que este arquivo foi pensado para mostrar o maximo de possibilidades com o minimo de friccao para o professor.\nCada topico pode virar uma aula real depois.\n-->\n\n---\n\n## Estrutura basica da disciplina\n\n| Pasta ou arquivo | Funcao |\n|---|---|\n| `contexto.md` | descreve a disciplina |\n| `plano_geral.md` | organiza a sequencia de conteudo |\n| `aulas/` | guarda os slides Marp |\n| `atividades/` | guarda as atividades |\n| `referencias/` | notas e apoio |\n\n---\n\n## Exemplo de imagem no slide\n\n![h:260](../assets/exemplo_fluxo.svg)\n\n<!--\nUsar este slide para mostrar que o professor pode incorporar diagramas simples no proprio material da disciplina.\n-->\n\n---\n\n## Exemplo de interface ou wireframe\n\n![h:250](../assets/exemplo_interface.svg)\n\n---\n\n<!-- _class: table-compact -->\n## Comparando tipos de conteudo\n\n| Tipo | Melhor uso | Saida comum |\n|---|---|---|\n| Aula | explicar, demonstrar, apresentar | slide |\n| Atividade | praticar, revisar, avaliar | PDF |\n| Referencia | apoiar o preparo do docente | Markdown interno |\n\n---\n\n## Destaques para a escrita\n\n- Use titulos curtos e objetivos\n- Prefira um ponto principal por slide\n- Marque trechos importantes com destaque como <span class=\"highlight\">conceito-chave</span>\n- Deixe anotacoes para voce em comentarios HTML\n\n<!--\nReforcar que o aluno ve o slide renderizado, mas o docente pode manter seu roteiro dentro do proprio arquivo.\n-->\n\n---\n\n## Mini atividade em sala\n\n1. Abra o arquivo da atividade modelo\n2. Identifique os blocos de marcacao, tabela e imagem\n3. Edite uma pergunta com sua propria linguagem\n4. Salve e volte para comparar o resultado\n\n---\n\n## Fechamento\n\n- Esta disciplina foi criada para servir como base inicial\n- Voce pode duplicar a estrutura e adaptar para sua materia\n- O proximo passo natural e substituir os exemplos pelo seu conteudo real\n"
 }
 
 fn template_lesson_draft(number: usize, theme: &str) -> String {
@@ -1032,7 +1033,7 @@ fn template_plan_model() -> &'static str {
 }
 
 fn template_notes() -> &'static str {
-    "# Notas do docente\n\n- Esta disciplina foi gerada automaticamente pelo SENAI Studio.\n- Use este arquivo para rascunhos, links e observacoes de apoio.\n"
+    "# Notas do docente\n\n- Esta disciplina foi gerada automaticamente pelo Lumen Studio.\n- Use este arquivo para rascunhos, links e observacoes de apoio.\n"
 }
 
 fn template_flow_svg() -> &'static str {
@@ -1112,6 +1113,11 @@ fs.writeFileSync(outputPath, html, 'utf8');
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+            window.set_icon(tauri::include_image!("icons/32x32.png"))?;
+            Ok(())
+        })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
