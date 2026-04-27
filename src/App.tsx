@@ -52,6 +52,14 @@ type ContentFileSnapshot = {
   updatedAtMs: number | null;
 };
 
+type CreateTemplateSubjectResult = {
+  slug: string;
+};
+
+type CreateContentItemResult = {
+  relativePath: string;
+};
+
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "error";
 
 const workspaceStorageKey = "senai-studio.workspace-path";
@@ -80,6 +88,7 @@ function App() {
   const [externallyModified, setExternallyModified] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
+  const [creatingTemplateSubject, setCreatingTemplateSubject] = useState(false);
 
   const editorContentRef = useRef("");
   const saveRequestRef = useRef(0);
@@ -336,6 +345,64 @@ function App() {
     }
   }
 
+  async function handleCreateTemplateSubject() {
+    if (!workspacePath || creatingTemplateSubject) {
+      return;
+    }
+
+    setCreatingTemplateSubject(true);
+
+    try {
+      const result = await invoke<CreateTemplateSubjectResult>("create_template_subject", {
+        workspacePath,
+      });
+
+      await refreshSubjects(workspacePath);
+      setSelectedSubjectSlug(result.slug);
+      setSelectedContentPath(null);
+      setEditorDocument(null);
+      setEditorContent("");
+      setLoadedEditorContent("");
+      setSaveState("idle");
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Falha ao criar a disciplina modelo.",
+      );
+    } finally {
+      setCreatingTemplateSubject(false);
+    }
+  }
+
+  async function handleCreateLessonDraft() {
+    if (!workspacePath || !selectedSubjectSlug) {
+      return;
+    }
+
+    const result = await invoke<CreateContentItemResult>("create_lesson_draft", {
+      workspacePath,
+      subjectSlug: selectedSubjectSlug,
+    });
+
+    await refreshSubjectDetail(workspacePath, selectedSubjectSlug);
+    setSelectedContentPath(result.relativePath);
+  }
+
+  async function handleCreateActivityDraft() {
+    if (!workspacePath || !selectedSubjectSlug) {
+      return;
+    }
+
+    const result = await invoke<CreateContentItemResult>("create_activity_draft", {
+      workspacePath,
+      subjectSlug: selectedSubjectSlug,
+    });
+
+    await refreshSubjectDetail(workspacePath, selectedSubjectSlug);
+    setSelectedContentPath(result.relativePath);
+  }
+
   const totalLessons = subjects.reduce((sum, subject) => sum + subject.lessonCount, 0);
   const totalActivities = subjects.reduce((sum, subject) => sum + subject.activityCount, 0);
   const hasWorkspace = workspacePath.trim().length > 0;
@@ -365,6 +432,10 @@ function App() {
     onToggleTechnicalBlocks: () => {
       setShowTechnicalBlocks((current) => !current);
       setCommandPaletteOpen(false);
+    },
+    onCreateTemplateSubject: () => {
+      setCommandPaletteOpen(false);
+      void handleCreateTemplateSubject();
     },
     onReloadCurrentFile: () => {
       if (!workspacePath || !selectedSubjectSlug || !selectedContentPath) {
@@ -527,9 +598,21 @@ function App() {
                   <p className="preview-label">Disciplinas</p>
                   <h2 id="subjects-title">Escolha uma disciplina para abrir</h2>
                 </div>
-                <p className="section-copy">
-                  Veja rapidamente suas disciplinas e entre na que deseja editar.
-                </p>
+                <div className="section-actions">
+                  <p className="section-copy">
+                    Veja rapidamente suas disciplinas e entre na que deseja editar.
+                  </p>
+                  {hasWorkspace ? (
+                    <button
+                      type="button"
+                      className="primary-action"
+                      onClick={() => void handleCreateTemplateSubject()}
+                      disabled={creatingTemplateSubject}
+                    >
+                      {creatingTemplateSubject ? "criando..." : "+ Disciplina"}
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               {!hasWorkspace ? (
@@ -537,6 +620,30 @@ function App() {
               ) : null}
               {hasWorkspace && loading ? <LoadingState /> : null}
               {hasWorkspace && error ? <ErrorState message={error} /> : null}
+              {hasWorkspace && !loading && !error && subjects.length === 0 ? (
+                <button
+                  type="button"
+                  className="template-card"
+                  onClick={() => void handleCreateTemplateSubject()}
+                  disabled={creatingTemplateSubject}
+                >
+                  <p className="subject-overline">Comecar rapido</p>
+                  <h3>Gerar disciplina modelo</h3>
+                  <p className="subject-metadata">
+                    Cria uma disciplina completa com contexto, plano, uma aula e uma
+                    atividade de exemplo para demonstrar o fluxo do Studio.
+                  </p>
+                  <div className="subject-card-footer">
+                    <div className="subject-flags">
+                      <span className="subject-flag is-ready">◉ aula modelo</span>
+                      <span className="subject-flag is-ready">◉ atividade modelo</span>
+                    </div>
+                    <p className="subject-updated">
+                      {creatingTemplateSubject ? "criando..." : "1 clique"}
+                    </p>
+                  </div>
+                </button>
+              ) : null}
               {hasWorkspace && !loading && !error ? (
                 <div className="subjects-grid">
                   {subjects.map((subject) => (
@@ -717,6 +824,8 @@ function App() {
                   items={selectedSubject.lessons}
                   selectedPath={selectedContentPath}
                   onSelect={setSelectedContentPath}
+                  actionLabel="+ Aula"
+                  onAction={() => void handleCreateLessonDraft()}
                 />
                 <ContentColumn
                   title="Atividades"
@@ -725,6 +834,8 @@ function App() {
                   items={selectedSubject.activities}
                   selectedPath={selectedContentPath}
                   onSelect={setSelectedContentPath}
+                  actionLabel="+ Atividade"
+                  onAction={() => void handleCreateActivityDraft()}
                 />
               </div>
             ) : null}
@@ -801,6 +912,8 @@ function ContentColumn({
   emptyMessage,
   selectedPath,
   onSelect,
+  actionLabel,
+  onAction,
 }: {
   title: string;
   subtitle: string;
@@ -808,6 +921,8 @@ function ContentColumn({
   emptyMessage: string;
   selectedPath: string | null;
   onSelect: (relativePath: string) => void;
+  actionLabel: string;
+  onAction: () => void;
 }) {
   return (
     <section className="content-column">
@@ -816,7 +931,12 @@ function ContentColumn({
           <p className="preview-label">{subtitle}</p>
           <h2>{title}</h2>
         </div>
-        <span className="status-chip">{items.length} itens</span>
+        <div className="content-column-actions">
+          <span className="status-chip">{items.length} itens</span>
+          <button type="button" className="ghost-action" onClick={onAction}>
+            {actionLabel}
+          </button>
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -964,6 +1084,7 @@ function buildCommandActions({
   showTechnicalBlocks,
   canReloadCurrentFile,
   onChooseWorkspace,
+  onCreateTemplateSubject,
   onGoHome,
   onGoToFiles,
   onToggleTechnicalBlocks,
@@ -975,6 +1096,7 @@ function buildCommandActions({
   showTechnicalBlocks: boolean;
   canReloadCurrentFile: boolean;
   onChooseWorkspace: () => Promise<void>;
+  onCreateTemplateSubject: () => void;
   onGoHome: () => void;
   onGoToFiles: () => void;
   onToggleTechnicalBlocks: () => void;
@@ -991,6 +1113,14 @@ function buildCommandActions({
       run: () => {
         void onChooseWorkspace();
       },
+    });
+
+    actions.push({
+      id: "create-template-subject",
+      label: "Nova disciplina modelo",
+      hint: "Criacao",
+      keywords: "nova disciplina modelo criar gerar exemplo",
+      run: onCreateTemplateSubject,
     });
   }
 
