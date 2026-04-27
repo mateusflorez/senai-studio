@@ -7,6 +7,7 @@ import { ActivityPreview } from "../components/ActivityPreview";
 
 export function EditorScreen({
   workspacePath,
+  backLabel,
   editorDocument,
   selectedContentItem,
   editorContent,
@@ -21,6 +22,7 @@ export function EditorScreen({
   onToggleMarpPreview,
 }: {
   workspacePath: string;
+  backLabel: string;
   editorDocument: EditableContentFile | null;
   selectedContentItem: ContentItem | null;
   editorContent: string;
@@ -44,7 +46,7 @@ export function EditorScreen({
       <div className="editor-screen-header">
         <div className="editor-screen-copy">
           <button type="button" className="back-action" onClick={onGoBack}>
-            ← voltar para arquivos da disciplina
+            ← {backLabel}
           </button>
           <p className="hero-kicker">Editor</p>
           <h1 id="editor-title">
@@ -59,8 +61,8 @@ export function EditorScreen({
         <aside className="workspace-panel editor-screen-panel">
           <div className="workspace-heading">
             <p className="preview-label">Arquivo aberto</p>
-            {selectedContentItem ? (
-              <span className="status-chip">{selectedContentItem.file}</span>
+            {selectedContentItem || editorDocument ? (
+              <span className="status-chip">{selectedContentItem?.file ?? editorDocument?.file}</span>
             ) : null}
             {canPreview ? (
               <button

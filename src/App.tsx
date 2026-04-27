@@ -26,13 +26,14 @@ import { DeleteModal } from "./components/modals/DeleteModal";
 import { PreviewModal } from "./components/modals/PreviewModal";
 import { HomeScreen } from "./screens/HomeScreen";
 import { SubjectDetailScreen } from "./screens/SubjectDetailScreen";
+import { SubjectDocumentIndexScreen } from "./screens/SubjectDocumentIndexScreen";
 import { EditorScreen } from "./screens/EditorScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 
 const workspaceStorageKey = "lumen-studio.workspace-path";
 
 function App() {
-  const [activeSection, setActiveSection] = useState<"home" | "settings">("home");
+  const [activeSection, setActiveSection] = useState<"home" | "context" | "plan" | "settings">("home");
   const [workspacePath, setWorkspacePath] = useState(
     () => window.localStorage.getItem(workspaceStorageKey) ?? "",
   );
@@ -74,9 +75,11 @@ function App() {
   const saveRequestRef = useRef(0);
 
   const hasWorkspace = workspacePath.trim().length > 0;
-  const viewingDetail = Boolean(selectedSubjectSlug);
+  const viewingDetail = activeSection === "home" && Boolean(selectedSubjectSlug) && !selectedContentPath;
   const viewingEditor = Boolean(selectedContentPath);
   const showingSettings = activeSection === "settings";
+  const showingContextIndex = activeSection === "context" && !viewingEditor;
+  const showingPlanIndex = activeSection === "plan" && !viewingEditor;
   const canPreviewCurrentFile =
     Boolean(selectedContentPath?.startsWith("aulas/")) ||
     Boolean(selectedContentPath?.startsWith("atividades/"));
@@ -260,19 +263,24 @@ function App() {
 
   useEffect(() => {
     if (!selectedSubject) {
-      setSelectedContentPath(null);
+      if (activeSection === "home") {
+        setSelectedContentPath(null);
+      }
       return;
     }
 
     const availableItems = [...selectedSubject.lessons, ...selectedSubject.activities];
+    const isStaticSubjectDocument =
+      selectedContentPath === "contexto.md" || selectedContentPath === "plano_geral.md";
 
     if (
+      !isStaticSubjectDocument &&
       selectedContentPath &&
       !availableItems.some((item) => item.relativePath === selectedContentPath)
     ) {
       setSelectedContentPath(null);
     }
-  }, [selectedSubject, selectedContentPath]);
+  }, [activeSection, selectedSubject, selectedContentPath]);
 
   useEffect(() => {
     if (!workspacePath || !selectedSubjectSlug || !selectedContentPath) {
@@ -605,33 +613,81 @@ function App() {
       .includes(commandQuery.trim().toLowerCase()),
   );
 
+  const editorBackLabel =
+    activeSection === "context"
+      ? "voltar para contextos"
+      : activeSection === "plan"
+        ? "voltar para planos"
+        : "voltar para arquivos da disciplina";
+
+  function openSection(section: "home" | "context" | "plan" | "settings") {
+    setActiveSection(section);
+    if (section !== "home") {
+      setSelectedSubjectSlug(null);
+      setSelectedSubject(null);
+    }
+    setSelectedContentPath(null);
+    setEditorDocument(null);
+    setEditorContent("");
+    setLoadedEditorContent("");
+    setSaveState("idle");
+    setExternallyModified(false);
+  }
+
+  function openDirectDocument(subject: SubjectSummary, relativePath: "contexto.md" | "plano_geral.md") {
+    setSelectedSubjectSlug(subject.slug);
+    setSelectedContentPath(relativePath);
+    setEditorDocument(null);
+    setEditorContent("");
+    setLoadedEditorContent("");
+    setSaveState("idle");
+    setExternallyModified(false);
+  }
+
   return (
     <main className="studio-shell">
       <aside className="studio-sidebar" aria-label="Navegação principal">
         <nav className="sidebar-icons">
           <button
             type="button"
-            className={`sidebar-icon${!showingSettings ? " is-active" : ""}`}
+            className={`sidebar-icon${activeSection === "home" ? " is-active" : ""}`}
             aria-label="Disciplinas"
-            onClick={() => setActiveSection("home")}
+            onClick={() => {
+              setActiveSection("home");
+              setSelectedSubjectSlug(null);
+              setSelectedSubject(null);
+              setSelectedContentPath(null);
+              setEditorDocument(null);
+              setEditorContent("");
+              setLoadedEditorContent("");
+              setSaveState("idle");
+              setExternallyModified(false);
+              setShowMarpPreview(false);
+            }}
           >
             <HomeIcon />
           </button>
-          <button type="button" className="sidebar-icon" aria-label="Aulas">
+          <button
+            type="button"
+            className={`sidebar-icon${activeSection === "context" ? " is-active" : ""}`}
+            aria-label="Contextos"
+            onClick={() => openSection("context")}
+          >
             <BookIcon />
           </button>
-          <button type="button" className="sidebar-icon" aria-label="Atividades">
+          <button
+            type="button"
+            className={`sidebar-icon${activeSection === "plan" ? " is-active" : ""}`}
+            aria-label="Planos"
+            onClick={() => openSection("plan")}
+          >
             <ClipboardIcon />
           </button>
           <button
             type="button"
             className={`sidebar-icon${showingSettings ? " is-active" : ""}`}
             aria-label="Configurações"
-            onClick={() => {
-              setSelectedContentPath(null);
-              setSelectedSubjectSlug(null);
-              setActiveSection("settings");
-            }}
+            onClick={() => openSection("settings")}
           >
             <SettingsIcon />
           </button>
@@ -660,6 +716,53 @@ function App() {
             onClearBackground={() => void handleClearAsset("background")}
             onSelectTheme={(themeId) => void handleSelectTheme(themeId)}
           />
+        ) : viewingEditor ? (
+          <EditorScreen
+            workspacePath={workspacePath}
+            backLabel={editorBackLabel}
+            editorDocument={editorDocument}
+            selectedContentItem={selectedContentItem}
+            editorContent={editorContent}
+            editorLoading={editorLoading}
+            editorError={editorError}
+            saveState={saveState}
+            lastSavedAtMs={lastSavedAtMs}
+            showMarpPreview={showMarpPreview}
+            externallyModified={externallyModified}
+            onChange={setEditorContent}
+            onGoBack={() => {
+              setSelectedContentPath(null);
+              if (activeSection !== "home") {
+                setSelectedSubjectSlug(null);
+                setSelectedSubject(null);
+              }
+            }}
+            onToggleMarpPreview={() => setShowMarpPreview((current) => !current)}
+          />
+        ) : showingContextIndex ? (
+          <SubjectDocumentIndexScreen
+            mode="context"
+            workspacePath={workspacePath}
+            changingWorkspace={changingWorkspace}
+            subjects={subjects}
+            loading={loading}
+            error={error}
+            hasWorkspace={hasWorkspace}
+            onChooseWorkspace={handleChooseWorkspace}
+            onOpenDocument={(subject) => openDirectDocument(subject, "contexto.md")}
+          />
+        ) : showingPlanIndex ? (
+          <SubjectDocumentIndexScreen
+            mode="plan"
+            workspacePath={workspacePath}
+            changingWorkspace={changingWorkspace}
+            subjects={subjects}
+            loading={loading}
+            error={error}
+            hasWorkspace={hasWorkspace}
+            onChooseWorkspace={handleChooseWorkspace}
+            onOpenDocument={(subject) => openDirectDocument(subject, "plano_geral.md")}
+          />
         ) : !viewingDetail ? (
           <HomeScreen
             workspacePath={workspacePath}
@@ -686,22 +789,6 @@ function App() {
             onDeleteSubject={(subject) =>
               setDeleteTarget({ kind: "subject", slug: subject.slug, name: subject.displayName })
             }
-          />
-        ) : viewingEditor ? (
-          <EditorScreen
-            workspacePath={workspacePath}
-            editorDocument={editorDocument}
-            selectedContentItem={selectedContentItem}
-            editorContent={editorContent}
-            editorLoading={editorLoading}
-            editorError={editorError}
-            saveState={saveState}
-            lastSavedAtMs={lastSavedAtMs}
-            showMarpPreview={showMarpPreview}
-            externallyModified={externallyModified}
-            onChange={setEditorContent}
-            onGoBack={() => setSelectedContentPath(null)}
-            onToggleMarpPreview={() => setShowMarpPreview((current) => !current)}
           />
         ) : (
           <SubjectDetailScreen

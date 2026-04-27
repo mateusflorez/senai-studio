@@ -1287,11 +1287,11 @@ fn next_content_number(dir: &Path, prefix: &str) -> usize {
 }
 
 fn template_context() -> &'static str {
-    "# Disciplina Modelo\n\n## Propósito\n\nEsta disciplina foi gerada para demonstrar o fluxo completo do Lumen Studio com arquivos reais, uma aula Marp e uma atividade em Markdown.\n\n## O que você encontra aqui\n\n- uma aula com capa, tópicos, tabela, imagem e notas do apresentador\n- uma atividade com marcação, tabela, imagem, campos de preenchimento e questões discursivas\n- estrutura completa de disciplina para servir como ponto de partida\n"
+    "# Disciplina Modelo\n\n## Visão geral\n\nEsta disciplina modelo foi criada para servir como base de planejamento no Lumen Studio, reunindo contexto, plano geral, aula e atividade de exemplo.\n\n## Escopo do que a disciplina cobre\n\n- fundamentos conceituais do tema principal\n- progressão dos conteúdos do básico ao aplicado\n- momentos de revisão, prática e avaliação\n- espaço para observações pedagógicas e ajustes de turma\n\n## Conteúdos e conhecimentos previstos\n\n- Conceito central 1\n  - Subtema 1.1\n  - Subtema 1.2\n- Conceito central 2\n  - Subtema 2.1\n  - Subtema 2.2\n- Procedimentos e práticas\n  - Ferramentas\n  - Exercícios guiados\n- Consolidação e avaliação\n  - Revisões\n  - Atividades avaliativas\n\n## Materiais disponíveis\n\n- slides em `aulas/`\n- atividades em `atividades/`\n- modelos em `modelos/`\n- notas e referências em `referencias/`\n- imagens e recursos visuais em `assets/`\n\n## Competências e foco formativo\n\n- interpretar conceitos e problemas da disciplina\n- aplicar procedimentos passo a passo\n- registrar soluções com clareza\n- relacionar teoria, prática e linguagem técnica\n\n## Observações pedagógicas\n\n- adaptar o ritmo conforme a turma\n- prever momentos de retomada para conteúdos mais densos\n- registrar aqui combinados, pré-requisitos e dificuldades recorrentes\n"
 }
 
 fn template_plan() -> &'static str {
-    "# Plano Geral — Disciplina Modelo\n\n## Objetivo geral\n\nApresentar uma estrutura de exemplo que ajude o professor a entender como organizar conteúdo, aula e atividade dentro do Lumen Studio.\n\n## Sequência sugerida\n\n1. Aula 01 — Visão geral do Studio\n2. Atividade 01 — Mapeamento de fluxo\n\n## Resultados esperados\n\n- Entender a estrutura da disciplina\n- Reconhecer os tipos de conteúdo que o editor suporta\n- Usar a disciplina como base para criar novas matérias\n"
+    "# Plano Geral — Disciplina Modelo\n\n## Visão geral\n\n- Disciplina: Disciplina Modelo\n- Carga horária: definir\n- Total de aulas: definir\n- Avaliações: definir\n- Observação inicial: usar a primeira aula para apresentação da disciplina e alinhamento de combinados\n\n## Objetivo da disciplina\n\nEstruturar uma sequência de aulas que combine explicação, prática, revisão e avaliação, com clareza sobre o que será abordado em cada etapa.\n\n---\n\n## Distribuição das aulas\n\n### Bloco 1 — Fundamentos e nivelamento\n\nAula 1\n- apresentação da disciplina e combinados\n- visão geral dos conteúdos\n- introdução ao tema central\n\nAula 2\n- conceito-chave 1\n- exemplos guiados\n- exercício inicial\n\nAula 3\n- conceito-chave 2\n- comparação entre abordagens\n- prática orientada\n\n---\n\n### Bloco 2 — Aplicação e aprofundamento\n\nAula 4\n- aplicação prática do conteúdo\n- resolução comentada\n- atividade curta de fixação\n\nAula 5\n- aprofundamento do conteúdo\n- erros comuns e boas práticas\n- exercício em sala\n\nAula 6\n- revisão do bloco\n- preparação para avaliação ou entrega\n\n---\n\n### Aula de revisão e avaliação\n\nAula 7\n- revisão dos pontos principais na primeira metade\n- avaliação, atividade valendo nota ou estudo dirigido na segunda metade\n\n---\n\n## Estrutura sugerida para cada aula\n\n- título e identificação da aula\n- objetivos da aula\n- tópicos centrais\n- roteiro de fala em comentário HTML\n- exemplo prático\n- exercício ou atividade\n- fechamento com revisão e próximos passos\n\n## Observações\n\n- ajustar a sequência conforme a turma, calendário e carga horária real\n- registrar aqui datas, blocos avaliativos e aulas especiais\n- quando necessário, separar claramente aulas de revisão e aulas de prova\n"
 }
 
 fn template_lesson() -> &'static str {
@@ -1320,14 +1320,14 @@ fn template_activity_draft(number: usize, theme: &str) -> String {
 
 fn empty_context_template(subject_name: &str) -> String {
     format!(
-        "# {0}\n\n## Proposito\n\nDescreva aqui o foco da disciplina.\n\n## Publico e contexto\n\n- Curso:\n- Turma:\n- Carga horaria:\n- Observacoes:\n",
+        "# {0}\n\n## Visão geral\n\nDescreva aqui o foco da disciplina e o papel dela dentro do curso.\n\n## Escopo do que a disciplina cobre\n\n- tema central 1\n- tema central 2\n- tema central 3\n\n## Conteúdos e conhecimentos previstos\n\n- conteúdo 1\n  - subtópico\n  - subtópico\n- conteúdo 2\n  - subtópico\n  - subtópico\n- conteúdo 3\n  - subtópico\n  - subtópico\n\n## Materiais disponíveis\n\n- slides\n- atividades\n- referências\n- softwares, laboratórios ou recursos específicos\n\n## Competências e foco formativo\n\n- competência 1\n- competência 2\n- competência 3\n\n## Público e contexto\n\n- Curso:\n- Turma:\n- Carga horária:\n- Pré-requisitos:\n\n## Observações pedagógicas\n\n- registrar aqui detalhamentos, combinados, adaptações e pontos de atenção\n",
         subject_name
     )
 }
 
 fn empty_plan_template(subject_name: &str) -> String {
     format!(
-        "# Plano Geral - {0}\n\n## Objetivo geral\n\nDescreva aqui o objetivo principal da disciplina.\n\n## Sequencia sugerida\n\n1. Aula 01 - Tema inicial\n2. Atividade 01 - Pratica inicial\n\n## Observacoes\n\n- Ajuste a sequencia conforme a turma.\n",
+        "# Plano Geral - {0}\n\n## Visão geral\n\n- Disciplina: {0}\n- Carga horária: definir\n- Total de aulas: definir\n- Avaliações: definir\n- Observações de calendário: definir\n\n## Objetivo da disciplina\n\nDescreva aqui o objetivo principal da disciplina e o resultado esperado para a turma.\n\n---\n\n## Distribuição das aulas\n\n### Bloco 1 — Base conceitual\n\nAula 1\n- apresentação da disciplina\n- visão geral do conteúdo\n- introdução ao tema inicial\n\nAula 2\n- desenvolvimento do conteúdo 1\n- exemplos guiados\n- exercício de fixação\n\n### Bloco 2 — Prática e aprofundamento\n\nAula 3\n- desenvolvimento do conteúdo 2\n- prática orientada\n- correção comentada\n\nAula 4\n- revisão do bloco\n- atividade avaliativa, estudo dirigido ou preparação para prova\n\n---\n\n## Estrutura sugerida para cada aula\n\n- título e identificação\n- objetivos\n- tópicos principais\n- prática ou exercício\n- fechamento\n\n## Observações\n\n- ajustar a sequência conforme a turma\n- registrar datas, provas, entregas e aulas especiais\n",
         subject_name
     )
 }
@@ -1337,7 +1337,7 @@ fn template_lesson_model() -> &'static str {
 }
 
 fn template_plan_model() -> &'static str {
-    "# Plano Geral\n\n## Objetivo geral\n\nDescreva aqui o objetivo principal da disciplina.\n\n## Sequencia de aulas\n\n1. Aula 01\n2. Aula 02\n3. Aula 03\n"
+    "# Plano Geral\n\n## Visão geral\n\n- Disciplina: Nome da disciplina\n- Carga horária: definir\n- Total de aulas: definir\n- Avaliações: definir\n\n## Objetivo da disciplina\n\nDescreva aqui o objetivo principal da disciplina.\n\n---\n\n## Distribuição das aulas\n\n### Bloco 1 — Introdução e fundamentos\n\nAula 1\n- apresentação da disciplina\n- introdução ao tema\n- primeiro exercício\n\nAula 2\n- desenvolvimento do conteúdo\n- exemplos guiados\n- prática orientada\n\n### Bloco 2 — Consolidação\n\nAula 3\n- revisão dos principais pontos\n- atividade ou avaliação\n\n---\n\n## Estrutura sugerida para cada aula\n\n- título e identificação\n- objetivos\n- tópicos principais\n- prática\n- fechamento\n\n## Observações\n\n- adaptar a sequência conforme o calendário da turma\n"
 }
 
 fn template_notes() -> &'static str {
