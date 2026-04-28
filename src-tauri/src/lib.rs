@@ -92,6 +92,17 @@ struct CreateContentItemResult {
     relative_path: String,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GlobalSearchResult {
+    kind: String,
+    subject_slug: String,
+    subject_display_name: String,
+    relative_path: Option<String>,
+    title: String,
+    snippet: String,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ContentKind {
     Lesson,
@@ -211,6 +222,104 @@ fn get_subject_detail(workspace_path: String, subject_slug: String) -> Result<Su
         lessons: list_content_items(&subject_path, "aulas", Some(("slides", "pptx"))),
         activities: list_content_items(&subject_path, "atividades", Some(("atividades/pdfs", "pdf"))),
     })
+}
+
+#[tauri::command]
+fn search_workspace_content(
+    workspace_path: String,
+    query: String,
+) -> Result<Vec<GlobalSearchResult>, String> {
+    let root = resolve_workspace_root(&workspace_path)?;
+    let trimmed_query = query.trim();
+    if trimmed_query.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let normalized_query = normalize_search_text(trimmed_query);
+    let mut results = Vec::new();
+    let entries = fs::read_dir(&root)
+        .map_err(|error| format!("Não foi possível ler o workspace {:?}: {}", root, error))?;
+
+    for entry in entries.filter_map(Result::ok).filter(|entry| entry.path().is_dir()) {
+        let subject_path = entry.path();
+        if !is_subject_directory(&subject_path) {
+            continue;
+        }
+
+        let Some(subject_slug) = subject_path.file_name().and_then(|value| value.to_str()).map(|value| value.to_string()) else {
+            continue;
+        };
+        let config = read_subject_config(&subject_path);
+        let subject_display_name = config
+            .as_ref()
+            .and_then(|cfg| cfg.nome.as_ref())
+            .filter(|value| !value.trim().is_empty())
+            .cloned()
+            .unwrap_or_else(|| humanize_slug(&subject_slug));
+        ensure_subject_support_files(&subject_path, &subject_display_name)?;
+
+        let subject_haystack = normalize_search_text(&format!("{} {}", subject_display_name, subject_slug));
+        if subject_haystack.contains(&normalized_query) {
+            results.push(GlobalSearchResult {
+                kind: "subject".to_string(),
+                subject_slug: subject_slug.clone(),
+                subject_display_name: subject_display_name.clone(),
+                relative_path: None,
+                title: subject_display_name.clone(),
+                snippet: format!("Disciplina {}", subject_slug),
+            });
+        }
+
+        append_search_result_for_file(
+            &mut results,
+            &normalized_query,
+            &subject_path,
+            &subject_slug,
+            &subject_display_name,
+            "contexto.md",
+            "context",
+            "Contexto",
+        );
+        append_search_result_for_file(
+            &mut results,
+            &normalized_query,
+            &subject_path,
+            &subject_slug,
+            &subject_display_name,
+            "plano_geral.md",
+            "plan",
+            "Plano geral",
+        );
+
+        append_search_results_for_folder(
+            &mut results,
+            &normalized_query,
+            &subject_path,
+            &subject_slug,
+            &subject_display_name,
+            "aulas",
+            "lesson",
+        );
+        append_search_results_for_folder(
+            &mut results,
+            &normalized_query,
+            &subject_path,
+            &subject_slug,
+            &subject_display_name,
+            "atividades",
+            "activity",
+        );
+    }
+
+    results.sort_by(|left, right| {
+        left.subject_display_name
+            .cmp(&right.subject_display_name)
+            .then(left.kind.cmp(&right.kind))
+            .then(left.title.cmp(&right.title))
+    });
+    results.truncate(40);
+
+    Ok(results)
 }
 
 #[tauri::command]
@@ -894,6 +1003,93 @@ fn list_content_items(
     items
 }
 
+fn append_search_results_for_folder(
+    results: &mut Vec<GlobalSearchResult>,
+    normalized_query: &str,
+    subject_path: &Path,
+    subject_slug: &str,
+    subject_display_name: &str,
+    folder_name: &str,
+    kind: &str,
+) {
+    let folder_path = subject_path.join(folder_name);
+    let entries = match fs::read_dir(&folder_path) {
+        Ok(entries) => entries,
+        Err(_) => return,
+    };
+
+    for entry in entries.filter_map(Result::ok) {
+        if !entry.path().is_file() {
+            continue;
+        }
+
+        let is_markdown = entry
+            .path()
+            .extension()
+            .and_then(|value| value.to_str())
+            .is_some_and(|value| value.eq_ignore_ascii_case("md"));
+        if !is_markdown {
+            continue;
+        }
+
+        let relative_path = format!("{}/{}", folder_name, entry.file_name().to_string_lossy());
+        append_search_result_for_file(
+            results,
+            normalized_query,
+            subject_path,
+            subject_slug,
+            subject_display_name,
+            &relative_path,
+            kind,
+            "",
+        );
+    }
+}
+
+fn append_search_result_for_file(
+    results: &mut Vec<GlobalSearchResult>,
+    normalized_query: &str,
+    subject_path: &Path,
+    subject_slug: &str,
+    subject_display_name: &str,
+    relative_path: &str,
+    kind: &str,
+    fallback_title: &str,
+) {
+    let content_path = subject_path.join(relative_path);
+    if !content_path.is_file() {
+        return;
+    }
+
+    let Ok(content) = fs::read_to_string(&content_path) else {
+        return;
+    };
+    let file_name = content_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or(relative_path);
+    let fallback_title_owned = if fallback_title.is_empty() {
+        humanize_slug(&file_stem(file_name))
+    } else {
+        fallback_title.to_string()
+    };
+    let title = display_title(&content, &fallback_title_owned);
+    let snippet = build_search_snippet(&content, normalized_query);
+    let haystack = normalize_search_text(&format!("{} {} {} {}", title, file_name, relative_path, content));
+    if !haystack.contains(normalized_query) {
+        return;
+    }
+
+    results.push(GlobalSearchResult {
+        kind: kind.to_string(),
+        subject_slug: subject_slug.to_string(),
+        subject_display_name: subject_display_name.to_string(),
+        relative_path: Some(relative_path.to_string()),
+        title,
+        snippet,
+    });
+}
+
 fn file_status(source_path: &Path, output_path: &Path) -> String {
     if !output_path.is_file() {
         return "none".to_string();
@@ -917,6 +1113,41 @@ fn display_title(content: &str, fallback: &str) -> String {
     extract_frontmatter(content, "title")
         .or_else(|| extract_first_heading(content))
         .unwrap_or_else(|| fallback.to_string())
+}
+
+fn build_search_snippet(content: &str, normalized_query: &str) -> String {
+    for raw_line in strip_frontmatter(content).lines() {
+        let line = raw_line.trim();
+        if line.is_empty() || line.starts_with('#') || line.starts_with("<!--") {
+            continue;
+        }
+
+        let normalized_line = normalize_search_text(line);
+        if normalized_line.contains(normalized_query) {
+            return truncate_search_snippet(line);
+        }
+    }
+
+    strip_frontmatter(content)
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(truncate_search_snippet)
+        .unwrap_or_else(|| "Sem trecho disponível.".to_string())
+}
+
+fn truncate_search_snippet(value: &str) -> String {
+    let snippet = value.trim();
+    let mut result = String::new();
+    for character in snippet.chars().take(120) {
+        result.push(character);
+    }
+
+    if snippet.chars().count() > 120 {
+        result.push('…');
+    }
+
+    result
 }
 
 fn extract_frontmatter(content: &str, key: &str) -> Option<String> {
@@ -1250,6 +1481,22 @@ fn humanize_slug(slug: &str) -> String {
         .map(capitalize)
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+fn normalize_search_text(value: &str) -> String {
+    let mut normalized = String::with_capacity(value.len());
+    for character in value.chars() {
+        normalized.push(match character {
+            'á' | 'à' | 'ã' | 'â' | 'ä' | 'Á' | 'À' | 'Ã' | 'Â' | 'Ä' => 'a',
+            'é' | 'è' | 'ê' | 'ë' | 'É' | 'È' | 'Ê' | 'Ë' => 'e',
+            'í' | 'ì' | 'î' | 'ï' | 'Í' | 'Ì' | 'Î' | 'Ï' => 'i',
+            'ó' | 'ò' | 'õ' | 'ô' | 'ö' | 'Ó' | 'Ò' | 'Õ' | 'Ô' | 'Ö' => 'o',
+            'ú' | 'ù' | 'û' | 'ü' | 'Ú' | 'Ù' | 'Û' | 'Ü' => 'u',
+            'ç' | 'Ç' => 'c',
+            _ => character.to_ascii_lowercase(),
+        });
+    }
+    normalized
 }
 
 fn capitalize(value: &str) -> String {
@@ -2350,6 +2597,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             list_subjects,
             get_subject_detail,
+            search_workspace_content,
             read_content_file,
             save_content_file,
             get_content_file_snapshot,

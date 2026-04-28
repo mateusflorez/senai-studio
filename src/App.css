@@ -135,6 +135,38 @@
   text-transform: uppercase;
 }
 
+.status-chip-action {
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.status-chip-action:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.shortcut-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.8rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
 .status-chip-ok {
   color: var(--ok);
   border-color: rgba(34, 197, 94, 0.22);
@@ -1183,11 +1215,32 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.command-palette-item:disabled {
+  opacity: 0.7;
+}
+
+.command-palette-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.command-palette-description {
+  color: var(--text-secondary);
+  font-family: var(--font-content);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .command-palette-hint {
   color: var(--text-secondary);
   font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .command-palette-empty {

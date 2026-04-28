@@ -62,6 +62,15 @@ export type RenameContentItemResult = {
   relativePath: string;
 };
 
+export type GlobalSearchResult = {
+  kind: "subject" | "lesson" | "activity" | "context" | "plan";
+  subjectSlug: string;
+  subjectDisplayName: string;
+  relativePath: string | null;
+  title: string;
+  snippet: string;
+};
+
 export type AssetSettingsState = {
   appDataDir: string;
   fallbackDir: string | null;

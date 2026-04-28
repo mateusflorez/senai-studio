@@ -3,6 +3,8 @@ export type CommandAction = {
   label: string;
   hint: string;
   keywords: string;
+  description?: string;
+  disabled?: boolean;
   run: () => void;
 };
 
@@ -39,12 +41,19 @@ export function CommandPalette({
                 key={action.id}
                 type="button"
                 className="command-palette-item"
+                disabled={action.disabled}
                 onClick={() => {
+                  if (action.disabled) return;
                   action.run();
                   onClose();
                 }}
               >
-                <span>{action.label}</span>
+                <span className="command-palette-copy">
+                  <span>{action.label}</span>
+                  {action.description ? (
+                    <span className="command-palette-description">{action.description}</span>
+                  ) : null}
+                </span>
                 <span className="command-palette-hint">{action.hint}</span>
               </button>
             ))

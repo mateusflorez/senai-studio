@@ -14,6 +14,7 @@ import type {
   CreateSubjectResult,
   CreateContentItemResult,
   RenameContentItemResult,
+  GlobalSearchResult,
   SaveState,
   DeleteTarget,
   AssetSettingsState,
@@ -66,6 +67,8 @@ function App() {
   const [externallyModified, setExternallyModified] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GlobalSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [creatingTemplateSubject, setCreatingTemplateSubject] = useState(false);
   const [createSubjectOpen, setCreateSubjectOpen] = useState(false);
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -667,6 +670,52 @@ function App() {
   }, [commandPaletteOpen]);
 
   useEffect(() => {
+    if (!commandPaletteOpen || !workspacePath) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    const trimmedQuery = commandQuery.trim();
+    if (trimmedQuery.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSearchLoading(true);
+
+    const timeoutId = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const results = await invoke<GlobalSearchResult[]>("search_workspace_content", {
+            workspacePath,
+            query: trimmedQuery,
+          });
+
+          if (!cancelled) {
+            setSearchResults(results);
+          }
+        } catch {
+          if (!cancelled) {
+            setSearchResults([]);
+          }
+        } finally {
+          if (!cancelled) {
+            setSearchLoading(false);
+          }
+        }
+      })();
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [commandPaletteOpen, commandQuery, workspacePath]);
+
+  useEffect(() => {
     if (!workspacePath || !selectedSubjectSlug || !selectedContentPath || !viewingEditor) {
       setExternallyModified(false);
       return;
@@ -738,12 +787,59 @@ function App() {
     },
   });
 
-  const visibleCommandActions = commandActions.filter((action) =>
+  function openSearchResult(result: GlobalSearchResult) {
+    setActiveSection("home");
+    setSelectedSubjectSlug(result.subjectSlug);
+    setSelectedContentPath(result.relativePath);
+    setEditorDocument(null);
+    setEditorContent("");
+    setLoadedEditorContent("");
+    setSaveState("idle");
+    setExternallyModified(false);
+    setCommandPaletteOpen(false);
+  }
+
+  const searchActions = searchResults.map((result) => ({
+    id: `search-${result.kind}-${result.subjectSlug}-${result.relativePath ?? "subject"}`,
+    label: result.title,
+    hint:
+      result.kind === "subject"
+        ? "Disciplina"
+        : `${result.kind === "lesson"
+            ? "Aula"
+            : result.kind === "activity"
+              ? "Atividade"
+              : result.kind === "context"
+                ? "Contexto"
+                : "Plano"} · ${result.subjectDisplayName}`,
+    keywords: `${result.title} ${result.subjectDisplayName} ${result.snippet}`,
+    description: result.snippet,
+    run: () => openSearchResult(result),
+  }));
+
+  const filteredCommandActions = commandActions.filter((action) =>
     [action.label, action.keywords]
       .join(" ")
       .toLowerCase()
       .includes(commandQuery.trim().toLowerCase()),
   );
+  const visibleCommandActions =
+    commandQuery.trim().length >= 2
+      ? [
+          ...(searchLoading
+            ? [{
+                id: "search-loading",
+                label: "Buscando no workspace...",
+                hint: "Busca",
+                keywords: "",
+                description: "Disciplinas, aulas, atividades e conteúdo interno.",
+                disabled: true,
+                run: () => {},
+              }]
+            : searchActions),
+          ...filteredCommandActions,
+        ]
+      : filteredCommandActions;
 
   const editorBackLabel =
     activeSection === "context"
@@ -830,6 +926,13 @@ function App() {
         <header className="stage-header">
           <p className="eyebrow">Lumen Studio</p>
           <div className="header-meta">
+            <button
+              type="button"
+              className="status-chip status-chip-action"
+              onClick={() => setCommandPaletteOpen(true)}
+            >
+              buscar no workspace <kbd className="shortcut-kbd">Ctrl+K</kbd>
+            </button>
             <span className={`status-chip ${hasWorkspace ? "status-chip-ok" : ""}`}>
               {hasWorkspace ? "◉ pasta conectada" : "◎ selecione uma pasta"}
             </span>
