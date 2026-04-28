@@ -12,6 +12,7 @@ export function ContentColumn({
   actionLabel,
   onAction,
   busyPath,
+  generationBusy,
   onGenerate,
   onOpenOutput,
   onMoveUp,
@@ -30,6 +31,7 @@ export function ContentColumn({
   actionLabel: string;
   onAction: () => void;
   busyPath: string | null;
+  generationBusy: boolean;
   onGenerate: (item: ContentItem) => void;
   onOpenOutput: (item: ContentItem) => void;
   onMoveUp: (item: ContentItem) => void;
@@ -67,7 +69,7 @@ export function ContentColumn({
         </div>
         <div className="content-column-actions">
           <span className="status-chip">{items.length} itens</span>
-          <button type="button" className="ghost-action" onClick={onAction}>
+          <button type="button" className="ghost-action" onClick={onAction} disabled={generationBusy}>
             {actionLabel}
           </button>
         </div>
@@ -109,7 +111,7 @@ export function ContentColumn({
                     type="button"
                     className="ghost-action"
                     onClick={() => handleMenuAction(() => onGenerate(item))}
-                    disabled={busyPath === item.relativePath}
+                    disabled={generationBusy}
                   >
                     {busyPath === item.relativePath ? "gerando..." : "Gerar"}
                   </button>
@@ -118,6 +120,7 @@ export function ContentColumn({
                       type="button"
                       className="ghost-action"
                       onClick={() => handleMenuAction(() => onOpenOutput(item))}
+                      disabled={generationBusy}
                     >
                       Abrir
                     </button>
@@ -131,6 +134,7 @@ export function ContentColumn({
                           current === item.relativePath ? null : item.relativePath,
                         )
                       }
+                      disabled={generationBusy}
                     >
                       Mais
                     </button>

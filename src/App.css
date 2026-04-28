@@ -1298,6 +1298,51 @@
   overflow-wrap: anywhere;
 }
 
+.subject-generate-all-action {
+  margin-top: 0;
+}
+
+.generation-progress-card {
+  width: min(32rem, calc(100vw - 2rem));
+}
+
+.generation-progress-track {
+  position: relative;
+  width: 100%;
+  height: 0.8rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+}
+
+.generation-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), #ffd27a);
+  transition: width 220ms ease;
+}
+
+.generation-progress-bar.is-indeterminate {
+  width: 42%;
+  animation: generation-progress-slide 1.1s ease-in-out infinite;
+}
+
+.generation-progress-meta {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@keyframes generation-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(240%);
+  }
+}
+
 @media (max-width: 1040px) {
   .hero-grid,
   .section-heading,

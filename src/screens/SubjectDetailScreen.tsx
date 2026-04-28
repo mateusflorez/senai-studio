@@ -12,8 +12,11 @@ export function SubjectDetailScreen({
   detailLoading,
   detailError,
   processingOutputPath,
+  generationBusy,
+  generatingAll,
   onChooseWorkspace,
   onEditSubject,
+  onGenerateAll,
   onSelectContent,
   onGoBack,
   onCreateLesson,
@@ -35,8 +38,11 @@ export function SubjectDetailScreen({
   detailLoading: boolean;
   detailError: string | null;
   processingOutputPath: string | null;
+  generationBusy: boolean;
+  generatingAll: boolean;
   onChooseWorkspace: () => Promise<void>;
   onEditSubject: () => void;
+  onGenerateAll: () => void;
   onSelectContent: (path: string) => void;
   onGoBack: () => void;
   onCreateLesson: () => void;
@@ -81,8 +87,17 @@ export function SubjectDetailScreen({
               type="button"
               className="ghost-action"
               onClick={onEditSubject}
+              disabled={generationBusy}
             >
               configurar disciplina
+            </button>
+            <button
+              type="button"
+              className="primary-action subject-generate-all-action"
+              onClick={onGenerateAll}
+              disabled={generationBusy}
+            >
+              {generatingAll ? "gerando tudo..." : "gerar tudo"}
             </button>
           </div>
           <p className="workspace-path">{workspacePath}</p>
@@ -114,6 +129,7 @@ export function SubjectDetailScreen({
             actionLabel="+ Aula"
             onAction={onCreateLesson}
             busyPath={processingOutputPath}
+            generationBusy={generationBusy}
             onGenerate={onGenerate}
             onOpenOutput={onOpenOutput}
             onMoveUp={onMoveContentUp}
@@ -133,6 +149,7 @@ export function SubjectDetailScreen({
             actionLabel="+ Atividade"
             onAction={onCreateActivity}
             busyPath={processingOutputPath}
+            generationBusy={generationBusy}
             onGenerate={onGenerate}
             onOpenOutput={onOpenOutput}
             onMoveUp={onMoveContentUp}

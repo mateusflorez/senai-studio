@@ -34,6 +34,13 @@ import { SettingsScreen } from "./screens/SettingsScreen";
 
 const workspaceStorageKey = "lumen-studio.workspace-path";
 
+type GenerationProgressState = {
+  mode: "single" | "bulk";
+  current: number;
+  total: number;
+  currentLabel: string;
+};
+
 function App() {
   const [activeSection, setActiveSection] = useState<"home" | "context" | "plan" | "settings">("home");
   const [workspacePath, setWorkspacePath] = useState(
@@ -69,6 +76,7 @@ function App() {
   const [previewItem, setPreviewItem] = useState<ContentItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [processingOutputPath, setProcessingOutputPath] = useState<string | null>(null);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgressState | null>(null);
   const [assetSettings, setAssetSettings] = useState<AssetSettingsState | null>(null);
   const [assetSettingsLoading, setAssetSettingsLoading] = useState(false);
   const [assetSettingsError, setAssetSettingsError] = useState<string | null>(null);
@@ -93,6 +101,12 @@ function App() {
         (item) => item.relativePath === selectedContentPath,
       ) ?? null)
     : null;
+  const generationBusy = generationProgress !== null;
+  const generatingAll = generationProgress?.mode === "bulk";
+  const generationPercent =
+    generationProgress?.mode === "bulk" && generationProgress.total > 0
+      ? Math.round((generationProgress.current / generationProgress.total) * 100)
+      : null;
 
   useEffect(() => {
     editorContentRef.current = editorContent;
@@ -427,11 +441,20 @@ function App() {
   }
 
   async function handleGenerateContent(item: ContentItem) {
-    if (!workspacePath || !selectedSubjectSlug || processingOutputPath) return;
+    if (!workspacePath || !selectedSubjectSlug || generationBusy) return;
 
     setProcessingOutputPath(item.relativePath);
+    setGenerationProgress({
+      mode: "single",
+      current: 1,
+      total: 1,
+      currentLabel: item.title,
+    });
 
     try {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 0);
+      });
       await invoke("generate_content_output", {
         workspacePath,
         subjectSlug: selectedSubjectSlug,
@@ -446,6 +469,45 @@ function App() {
       setDetailError(describeError(cause, "Falha ao gerar o arquivo."));
     } finally {
       setProcessingOutputPath(null);
+      setGenerationProgress(null);
+    }
+  }
+
+  async function handleGenerateAllContent() {
+    if (!workspacePath || !selectedSubjectSlug || !selectedSubject || generationBusy) return;
+
+    const items = [...selectedSubject.lessons, ...selectedSubject.activities];
+    if (items.length === 0) return;
+
+    try {
+      for (const [index, item] of items.entries()) {
+        setProcessingOutputPath(item.relativePath);
+        setGenerationProgress({
+          mode: "bulk",
+          current: index + 1,
+          total: items.length,
+          currentLabel: item.title,
+        });
+
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        });
+
+        await invoke("generate_content_output", {
+          workspacePath,
+          subjectSlug: selectedSubjectSlug,
+          relativePath: item.relativePath,
+        });
+      }
+    } catch (cause) {
+      setDetailError(describeError(cause, "Falha ao gerar os arquivos da disciplina."));
+    } finally {
+      await Promise.all([
+        refreshSubjects(workspacePath),
+        refreshSubjectDetail(workspacePath, selectedSubjectSlug),
+      ]);
+      setProcessingOutputPath(null);
+      setGenerationProgress(null);
     }
   }
 
@@ -870,8 +932,11 @@ function App() {
             detailLoading={detailLoading}
             detailError={detailError}
             processingOutputPath={processingOutputPath}
+            generationBusy={generationBusy}
+            generatingAll={generatingAll}
             onChooseWorkspace={handleChooseWorkspace}
             onEditSubject={() => setEditSubjectOpen(true)}
+            onGenerateAll={() => void handleGenerateAllContent()}
             onSelectContent={setSelectedContentPath}
             onGoBack={() => setSelectedSubjectSlug(null)}
             onCreateLesson={() => setCreateLessonOpen(true)}
@@ -1027,6 +1092,52 @@ function App() {
           actions={visibleCommandActions}
           onClose={() => setCommandPaletteOpen(false)}
         />
+      ) : null}
+
+      {generationProgress ? (
+        <div className="modal-backdrop">
+          <section
+            className="modal-card generation-progress-card"
+            aria-label={generationProgress.mode === "bulk" ? "Gerando disciplina" : "Gerando arquivo"}
+          >
+            <div className="modal-header">
+              <div>
+                <p className="preview-label">
+                  {generationProgress.mode === "bulk" ? "Geração da disciplina" : "Geração do arquivo"}
+                </p>
+                <h2>
+                  {generationProgress.mode === "bulk"
+                    ? `${generationProgress.current} de ${generationProgress.total}`
+                    : "Gerando"}
+                </h2>
+              </div>
+            </div>
+            <div className="modal-stack">
+              <p className="modal-copy">
+                {generationProgress.mode === "bulk"
+                  ? `Processando ${generationProgress.current} de ${generationProgress.total}: ${generationProgress.currentLabel}`
+                  : `Processando ${generationProgress.currentLabel}`}
+              </p>
+              <div className="generation-progress-track" aria-hidden="true">
+                <div
+                  className={`generation-progress-bar${generationProgress.mode === "single" ? " is-indeterminate" : ""}`}
+                  style={
+                    generationProgress.mode === "bulk" && generationPercent !== null
+                      ? { width: `${generationPercent}%` }
+                      : undefined
+                  }
+                />
+              </div>
+              <div className="generation-progress-meta">
+                <span className="status-chip status-chip-saving">
+                  {generationProgress.mode === "bulk"
+                    ? `${generationPercent ?? 0}% concluído`
+                    : "gerando arquivo..."}
+                </span>
+              </div>
+            </div>
+          </section>
+        </div>
       ) : null}
     </main>
   );

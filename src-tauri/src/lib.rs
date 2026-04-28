@@ -569,31 +569,35 @@ fn reorder_content_item(
 }
 
 #[tauri::command]
-fn generate_content_output(
+async fn generate_content_output(
     workspace_path: String,
     subject_slug: String,
     relative_path: String,
 ) -> Result<(), String> {
-    let root = resolve_workspace_root(&workspace_path)?;
-    let tool_root = resolve_generation_tool_root(&root)?;
-    let subject_path = resolve_subject_path(&workspace_path, &subject_slug)?;
-    let content_path = resolve_content_path(&subject_path, &relative_path)?;
-    let file_name = content_path
-        .file_name()
-        .and_then(|value| value.to_str())
-        .ok_or_else(|| "Nome de arquivo inválido.".to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let root = resolve_workspace_root(&workspace_path)?;
+        let tool_root = resolve_generation_tool_root(&root)?;
+        let subject_path = resolve_subject_path(&workspace_path, &subject_slug)?;
+        let content_path = resolve_content_path(&subject_path, &relative_path)?;
+        let file_name = content_path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .ok_or_else(|| "Nome de arquivo inválido.".to_string())?;
 
-    if relative_path.starts_with("aulas/") {
-        generate_lesson_output(&tool_root, &content_path, file_name)?;
-        return Ok(());
-    }
+        if relative_path.starts_with("aulas/") {
+            generate_lesson_output(&tool_root, &content_path, file_name)?;
+            return Ok(());
+        }
 
-    if relative_path.starts_with("atividades/") {
-        generate_activity_output(&tool_root, &subject_path, &content_path, file_name)?;
-        return Ok(());
-    }
+        if relative_path.starts_with("atividades/") {
+            generate_activity_output(&tool_root, &subject_path, &content_path, file_name)?;
+            return Ok(());
+        }
 
-    Err("Esse tipo de arquivo não possui geração configurada.".to_string())
+        Err("Esse tipo de arquivo não possui geração configurada.".to_string())
+    })
+    .await
+    .map_err(|error| format!("Não foi possível concluir a geração: {}", error))?
 }
 
 #[tauri::command]

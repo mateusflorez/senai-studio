@@ -248,7 +248,7 @@ A migração é incremental: o Studio começa lendo arquivos existentes no prime
 - [x] Duplicar aula e atividade para acelerar criação de material reaproveitável
 - [x] Criar `contexto.md` e `plano_geral.md` automaticamente quando estiverem faltando
 - [x] Permitir reordenação e renumeração de aulas e atividades
-- [ ] Adicionar ação de gerar tudo da disciplina de uma vez
+- [x] Adicionar ação de gerar tudo da disciplina de uma vez
 
 ### Fase 6 — Segurança, visão e produtividade
 - [ ] Melhorar o fluxo de conflito de edição externa com opções de recarregar, comparar e manter alterações locais
