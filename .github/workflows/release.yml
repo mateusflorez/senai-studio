@@ -18,7 +18,7 @@ permissions:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   REGISTRY: ghcr.io
-  IMAGE_BUILD_CACHE: ghcr.io/${{ github.repository_owner }}/senai-studio-build-cache
+  IMAGE_BUILD_CACHE: ghcr.io/${{ github.repository_owner }}/lumen-studio-build-cache
 
 jobs:
   # ──────────────────────────────────────────────────────────────

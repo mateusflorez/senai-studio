@@ -258,7 +258,7 @@ function lineEnd(doc: Text, lineNumber: number) {
 function isTechnicalAssetLine(trimmed: string) {
   return (
     trimmed.startsWith("![") &&
-    (trimmed.includes("senai_logo") ||
+    (trimmed.includes("lumen_logo") ||
       trimmed.includes("/assets/logo") ||
       trimmed.includes("\\assets\\logo") ||
       trimmed.includes("../shared/"))

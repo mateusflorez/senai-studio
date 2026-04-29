@@ -1,4 +1,4 @@
-# SENAI Studio — Proposta de Aplicação Desktop
+# Lumen Studio — Proposta de Aplicação Desktop
 
 ## Contexto e Motivação
 
@@ -10,7 +10,7 @@ Um app desktop com Tauri + React resolve tudo isso sem abandonar o que já exist
 
 ## Visão do Produto
 
-**SENAI Studio** — uma ferramenta de autoria de conteúdo didático para o professor.
+**Lumen Studio** — uma ferramenta de autoria de conteúdo didático para o professor.
 
 Não é um LMS. Não é um gerador de slides genérico. É um ambiente focado: você abre, seleciona a disciplina, edita, pré-visualiza em tempo real, e exporta com um clique. O loop inteiro em uma janela.
 
@@ -343,7 +343,7 @@ Isso produz dois arquivos:
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6...",
       "endpoints": [
-        "https://<github-user>.github.io/senai_studio/latest.json"
+        "https://<github-user>.github.io/lumen_studio/latest.json"
       ]
     }
   }
@@ -529,7 +529,7 @@ jobs:
 
 O `latest.json` ficará disponível em:
 ```
-https://<github-user>.github.io/senai_studio/latest.json
+https://<github-user>.github.io/lumen_studio/latest.json
 ```
 
 ---

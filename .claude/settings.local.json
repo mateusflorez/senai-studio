@@ -6,7 +6,9 @@
       "Bash(npm install *)",
       "Bash(gh run *)",
       "Bash(grep -iE \"\\\\.\\(env|key|pem|p12|pfx|secret\\)$|\\\\.env\\\\.\")",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node -e \"require\\('sharp'\\)\")",
+      "Bash(/c/Program Files/Inkscape/bin/inkscape.exe *)"
     ]
   }
 }

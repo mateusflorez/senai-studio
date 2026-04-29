@@ -1,4 +1,4 @@
-# SENAI Studio — Design Reference
+# Lumen Studio — Design Reference
 
 Mockups em ASCII. Cada tela usa a mesma estrutura de chrome:
 barra de título do Tauri (sem frame do OS) + rail lateral + área principal.
@@ -15,7 +15,7 @@ O rail esquerdo está recolhido (44px, apenas ícones).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
-│  ◈  SENAI Studio                                                     —   □   ✕   │
+│  ◈  Lumen Studio                                                     —   □   ✕   │
 ├───┬────────────────────────────────────────────────────────────────────────────────┤
 │   │                                                                                │
 │ ◈ │   DISCIPLINAS                                               + Nova disciplina │
@@ -62,7 +62,7 @@ além da borda do painel (intencional — grid breaking).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
-│  ◈  SENAI Studio  ›  Lógica de Programação                          —   □   ✕   │
+│  ◈  Lumen Studio  ›  Lógica de Programação                          —   □   ✕   │
 ├───┬────────────────────────────────────────────────────────────────────────────────┤
 │   │                                                                                │
 │ ◈ │   ‹ Disciplinas                                                               │
@@ -113,14 +113,14 @@ O preview mostra thumbnails reais dos slides em 16:9, não screenshots estática
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  ◈  SENAI Studio  ›  Lógica  ›  Aula 02 — Álgebra Booleana           —   □   ✕    │
+│  ◈  Lumen Studio  ›  Lógica  ›  Aula 02 — Álgebra Booleana           —   □   ✕    │
 ├───┬────────────┬─────────────────────────────────┬──────────────────────────────────┤
 │   │  ESTRUTURA │  EDITOR                          │  PREVIEW SLIDES             ↔  │
 │ ◈ │  ────────  │  ──────────────────────────────  │  ──────────────────────────     │
 │   │            │                                  │                                 │
 │ ▤ │  ▾ Slides  │   1  ---                         │  ┌─────────────────────────┐   │
 │   │    01      │   2  marp: true                  │  │                         │   │
-│ ⊞ │    02      │   3  theme: senai                │  │  ÁLGEBRA                │   │
+│ ⊞ │    02      │   3  theme: lumen                │  │  ÁLGEBRA                │   │
 │   │    03      │   4  paginate: true              │  │  BOOLEANA               │   │
 │   │    04      │   5  ---                         │  │                         │   │
 │   │    05      │   6                              │  │  Aula 02                │   │
@@ -169,13 +169,13 @@ Renderiza o HTML da atividade ao vivo, proporcional à página.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
-│  ◈  SENAI Studio  ›  Lógica  ›  Atividade 02 — Expressões Lógicas    —   □   ✕    │
+│  ◈  Lumen Studio  ›  Lógica  ›  Atividade 02 — Expressões Lógicas    —   □   ✕    │
 ├───┬────────────┬─────────────────────────────────┬──────────────────────────────────┤
 │   │  ESTRUTURA │  EDITOR                          │  PREVIEW A4                 ↔  │
 │ ◈ │  ────────  │  ──────────────────────────────  │  ──────────────────────────     │
 │   │            │                                  │                                 │
 │ ▤ │  Atividade │   1  ---                         │  ╔═══════════════════════════╗  │
-│   │  Enunciado │   2  title: Expressões Lógicas   │  ║  SENAI           [logo]   ║  │
+│   │  Enunciado │   2  title: Expressões Lógicas   │  ║  Lumen           [logo]   ║  │
 │ ⊞ │  Questão 1 │   3  subtitle: Lógica de Prog.  │  ║  ───────────────────────  ║  │
 │   │  Questão 2 │   4  ---                         │  ║                           ║  │
 │   │  Questão 3 │   5                              │  ║  Expressões Lógicas       ║  │
@@ -264,7 +264,7 @@ Exibe a disciplina atual no título. Fundo com o card em `var(--bg-surface)`.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
-│  ◈  SENAI Studio  ›  Configurações                                   —   □   ✕   │
+│  ◈  Lumen Studio  ›  Configurações                                   —   □   ✕   │
 ├───┬────────────────────────────────────────────────────────────────────────────────┤
 │   │                                                                                │
 │ ◈ │   CONFIGURAÇÕES                                                               │

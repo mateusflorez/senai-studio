@@ -147,7 +147,7 @@ External modification detection polls `get_content_file_snapshot` every **2 seco
 ## Project Structure
 
 ```
-senai_studio/
+lumen_studio/
 ├── index.html                  # Vite entry point
 ├── vite.config.ts              # Dev server port 1420, ignores src-tauri/
 ├── tsconfig.json               # Strict TS: noUnusedLocals, noUnusedParameters
