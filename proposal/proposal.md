@@ -605,7 +605,7 @@ O Actions vai cuidar do resto: compilar, assinar, publicar a Release e atualizar
 - [x] Configurar o endpoint do `latest.json` em `tauri.conf.json`
 - [x] Adicionar `tauri-plugin-updater` ao `Cargo.toml` e registrar no builder
 - [x] Adicionar permissão `updater:default` em `capabilities/default.json`
-- [ ] Criar branch `gh-pages` com `latest.json` vazio e habilitar GitHub Pages
+- [x] Criar branch `gh-pages` com `latest.json` vazio e habilitar GitHub Pages
 - [x] Criar workflow `.github/workflows/release.yml`
-- [ ] Implementar `useAppUpdater.ts` e wiring na UI
+- [x] Implementar `useAppUpdater.ts` e wiring na UI
 - [ ] Fazer release de teste com tag `v0.1.1` e verificar o fluxo ponta a ponta

@@ -27,6 +27,8 @@ import { CreateContentModal } from "./components/modals/CreateContentModal";
 import { DeleteModal } from "./components/modals/DeleteModal";
 import { PreviewModal } from "./components/modals/PreviewModal";
 import { RenameContentModal } from "./components/modals/RenameContentModal";
+import { useAppUpdater } from "./hooks/useAppUpdater";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { HomeScreen } from "./screens/HomeScreen";
 import { SubjectDetailScreen } from "./screens/SubjectDetailScreen";
 import { SubjectDocumentIndexScreen } from "./screens/SubjectDocumentIndexScreen";
@@ -84,6 +86,8 @@ function App() {
   const [assetSettingsLoading, setAssetSettingsLoading] = useState(false);
   const [assetSettingsError, setAssetSettingsError] = useState<string | null>(null);
   const [assetSettingsBusy, setAssetSettingsBusy] = useState(false);
+
+  const { status: updateStatus, dismissed: updateDismissed, dismiss: dismissUpdate, install: installUpdate } = useAppUpdater();
 
   const editorContentRef = useRef("");
   const saveRequestRef = useRef(0);
@@ -923,6 +927,13 @@ function App() {
       </aside>
 
       <section className="studio-stage">
+        {!updateDismissed && (
+          <UpdateBanner
+            status={updateStatus}
+            onInstall={() => void installUpdate()}
+            onDismiss={dismissUpdate}
+          />
+        )}
         <header className="stage-header">
           <p className="eyebrow">Lumen Studio</p>
           <div className="header-meta">
