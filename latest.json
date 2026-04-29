@@ -1,11 +1,19 @@
 {
-  "version": "1.2.2",
+  "version": "1.2.3",
   "notes": "## O que mudou\n\nVeja o histórico de commits para detalhes desta versão.\n\n## Instalação\n\nBaixe o arquivo `_x64-setup.exe` abaixo e execute o instalador.",
-  "pub_date": "2026-04-29T14:58:39Z",
+  "pub_date": "2026-04-29T15:30:21.696Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/mateusflorez/lumen-studio/releases/download/v1.2.2/Lumen.Studio_1.2.2_x64-setup.exe",
-      "signature": ""
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTa0RsTWluRjN2Ym5TSHhuRkpBU0QvVk1jVXFmRkhTUVVFWUpNdFRiY0JDMk9DckladURleFdkbGphRklBQ2NkR0NFNTliZk9GOUI2dU1CZWZHRkJuOWN5dEVSN2VjNmdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3NDc2NjE3CWZpbGU6THVtZW4gU3R1ZGlvXzEuMi4zX3g2NF9lbi1VUy5tc2kKNjhqK2FnOVF6eElTWEE1dVRNNlFNQkFwSGtGbjRYeWUwSjVYcFlYeUdPWnRFalBlK250N2o0cytobXkvU2htMFUrV05wQXczM1pJU2s5eFNVT1drQmc9PQo=",
+      "url": "https://github.com/mateusflorez/lumen-studio/releases/download/v1.2.3/Lumen.Studio_1.2.3_x64_en-US.msi"
+    },
+    "windows-x86_64-msi": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTa0RsTWluRjN2Ym5TSHhuRkpBU0QvVk1jVXFmRkhTUVVFWUpNdFRiY0JDMk9DckladURleFdkbGphRklBQ2NkR0NFNTliZk9GOUI2dU1CZWZHRkJuOWN5dEVSN2VjNmdzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3NDc2NjE3CWZpbGU6THVtZW4gU3R1ZGlvXzEuMi4zX3g2NF9lbi1VUy5tc2kKNjhqK2FnOVF6eElTWEE1dVRNNlFNQkFwSGtGbjRYeWUwSjVYcFlYeUdPWnRFalBlK250N2o0cytobXkvU2htMFUrV05wQXczM1pJU2s5eFNVT1drQmc9PQo=",
+      "url": "https://github.com/mateusflorez/lumen-studio/releases/download/v1.2.3/Lumen.Studio_1.2.3_x64_en-US.msi"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTa0RsTWluRjN2YnE0Nm16WDVqYTF0VkVrZTQ1TzNsVUR1U0JJcEVKN1BnMWpjdWhPT0hhUUhydHZJcndJZXpManhFV0JWalNiWVNHdGQ2RXcwbWl1SkpyTW4za0kvVkFZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzc3NDc2NjE3CWZpbGU6THVtZW4gU3R1ZGlvXzEuMi4zX3g2NC1zZXR1cC5leGUKWW1FcW52dWtPMEsxYlc1U2t4NGF2M0x1VXdaeUR1V1FXek8rVGxKeFgzS1RUZGpzenpHQ2NhT2Jwem5heWtqVGQ4bThXcXAxQ0hWS0ZXdEV2bEFEQ3c9PQo=",
+      "url": "https://github.com/mateusflorez/lumen-studio/releases/download/v1.2.3/Lumen.Studio_1.2.3_x64-setup.exe"
     }
   }
 }
