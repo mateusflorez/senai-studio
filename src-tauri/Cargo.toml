@@ -1,6 +1,6 @@
 [package]
 name = "lumen-studio"
-version = "1.2.1"
+version = "1.2.2"
 description = "Lumen Studio — desktop authoring tool for educational content"
 authors = ["Mateus Flores"]
 edition = "2021"
